@@ -1,0 +1,3 @@
+﻿# PROJECT_NAME
+
+Plugin slug: PROJECT_SLUG
