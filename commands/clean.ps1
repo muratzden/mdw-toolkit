@@ -29,11 +29,14 @@ function Invoke-MDWClean {
     Write-Host "[MDW] Clean started: $pluginSlug" -ForegroundColor Cyan
 
     $toolkitRoot = Get-MDWRootPath
-    $pluginsRoot = "C:\Workspace\Plugins"
+    $workspaceRoot = Split-Path $toolkitRoot -Parent
+    $pluginsRoot = Join-Path $workspaceRoot "Plugins"
 
     $pluginPath = Join-Path $pluginsRoot $pluginSlug
-    $buildPath = Join-Path (Join-Path $toolkitRoot "build") $pluginSlug
-    $releasePath = Join-Path (Join-Path $toolkitRoot "releases") $pluginSlug
+    $buildPath = Join-Path (Join-Path $workspaceRoot "Build") $pluginSlug
+    $releasePath = Join-Path (Join-Path $workspaceRoot "Releases") $pluginSlug
+    $legacyBuildPath = Join-Path (Join-Path $toolkitRoot "build") $pluginSlug
+    $legacyReleasePath = Join-Path (Join-Path $toolkitRoot "releases") $pluginSlug
 
     if (-not (Test-Path $pluginPath)) {
         throw "Plugin directory not found: $pluginPath"
@@ -41,7 +44,9 @@ function Invoke-MDWClean {
 
     $pathsToClean = @(
         $buildPath,
-        $releasePath
+        $releasePath,
+        $legacyBuildPath,
+        $legacyReleasePath
     )
 
     foreach ($path in $pathsToClean) {

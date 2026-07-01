@@ -27,14 +27,15 @@ function Invoke-MDWZip {
     }
 
     $toolkitRoot = Get-MDWRootPath
-    $buildRoot = Join-Path $toolkitRoot "build"
-    $releaseRoot = Join-Path $toolkitRoot "releases"
+    $workspaceRoot = Split-Path $toolkitRoot -Parent
+    $buildRoot = Join-Path $workspaceRoot "Build"
+    $releaseRoot = Join-Path $workspaceRoot "Releases"
 
     $buildPath = Join-Path $buildRoot $pluginSlug
     $releasePluginRoot = Join-Path $releaseRoot $pluginSlug
     $zipPath = Join-Path $releasePluginRoot "$pluginSlug.zip"
 
-    if (-not (Test-Path $buildPath)) {
+    if (-not (Test-Path $buildPath -PathType Container)) {
         throw "Build directory not found. Run first: mdw build $pluginSlug"
     }
 
@@ -48,10 +49,32 @@ function Invoke-MDWZip {
 
     Write-Host "[MDW] ZIP started: $pluginSlug" -ForegroundColor Cyan
 
-    Compress-Archive `
-        -Path $buildPath `
-        -DestinationPath $zipPath `
-        -Force
+    $buildItems = Get-ChildItem -LiteralPath $buildPath -Force
+
+    if ($null -eq $buildItems -or $buildItems.Count -eq 0) {
+        throw "Build directory is empty: $buildPath"
+    }
+
+    $temporaryZipRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("mdw-zip-" + [System.Guid]::NewGuid().ToString("N"))
+    $temporaryPluginPath = Join-Path $temporaryZipRoot $pluginSlug
+
+    try {
+        New-Item -ItemType Directory -Path $temporaryPluginPath -Force | Out-Null
+
+        foreach ($item in $buildItems) {
+            Copy-Item -LiteralPath $item.FullName -Destination $temporaryPluginPath -Recurse -Force
+        }
+
+        Compress-Archive `
+            -Path $temporaryPluginPath `
+            -DestinationPath $zipPath `
+            -Force
+    }
+    finally {
+        if (Test-Path $temporaryZipRoot) {
+            Remove-Item -Path $temporaryZipRoot -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
 
     Write-Host "[MDW] ZIP: $zipPath"
     Write-Host "[MDW] ZIP completed: $pluginSlug" -ForegroundColor Green
