@@ -11,22 +11,7 @@ function Invoke-MDWVersion {
         [string[]] $Arguments
     )
 
-    $version = "0.1.0"
-
-    try {
-        $rootPath = Get-MDWRootPath
-
-        if (Get-Command Get-MDWConfigValue -ErrorAction SilentlyContinue) {
-            $configuredVersion = Get-MDWConfigValue -ToolkitRoot $rootPath -Key "version"
-
-            if ($configuredVersion) {
-                $version = $configuredVersion
-            }
-        }
-    }
-    catch {
-        $version = "0.1.0"
-    }
+    $version = "0.1.1-alpha"
 
     Write-Host "MDW Toolkit $version"
 }
