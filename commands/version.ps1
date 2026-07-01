@@ -5,47 +5,55 @@ PowerShell 5.1 / 7 compatible
 
 Set-StrictMode -Version 2.0
 
-function Get-MDWVersionWorkspacePath {
-    [CmdletBinding()]
-    param()
-
-    $toolkitRoot = Get-MDWRootPath
-    $workspacePath = Split-Path $toolkitRoot -Parent
-
-    try {
-        $config = Get-MDWConfig -ToolkitRoot $toolkitRoot
-        $configuredWorkspacePath = Get-MDWConfigValue -Config $config -Key "workspace.rootPath" -DefaultValue $null
-
-        if (-not [string]::IsNullOrWhiteSpace([string] $configuredWorkspacePath)) {
-            $workspacePath = [string] $configuredWorkspacePath
-        }
-    }
-    catch {
-        $workspacePath = Split-Path $toolkitRoot -Parent
-    }
-
-    return $workspacePath
-}
-
 function Invoke-MDWVersion {
     [CmdletBinding()]
     param(
         [string[]] $Arguments
     )
 
-    $version = "v0.1.2-alpha"
+    $toolkitRoot = Get-MDWToolkitPath
+    $workspaceRoot = Get-MDWWorkspacePath
+    $config = Get-MDWConfig -ToolkitRoot $toolkitRoot
+    $metadata = Get-MDWToolkitMetadata -Config $config
     $powerShellVersion = $PSVersionTable.PSVersion.ToString()
-    $toolkitRoot = Get-MDWRootPath
-    $workspacePath = Get-MDWVersionWorkspacePath
-    $githubUrl = "https://github.com/muratzden/mdw-toolkit"
 
-    Write-Host ""
-    Write-Host ("MDW Toolkit {0}" -f $version)
-    Write-Host "Professional WordPress CLI Toolkit"
-    Write-Host ""
-    Write-MDWInfoCard -Label "PowerShell" -Value $powerShellVersion
-    Write-MDWInfoCard -Label "Toolkit" -Value $toolkitRoot
-    Write-MDWInfoCard -Label "Workspace" -Value $workspacePath
-    Write-MDWInfoCard -Label "GitHub" -Value $githubUrl
-    Write-Host ""
+    $logoPath = Join-Path $toolkitRoot 'assets\logo-terminal.txt'
+
+    Write-Host ''
+
+    if (Test-Path $logoPath) {
+        Get-Content $logoPath | ForEach-Object {
+            Write-Host $_ -ForegroundColor Cyan
+        }
+
+        Write-Host ''
+    }
+
+    Write-Host $metadata.Slogan -ForegroundColor Blue
+
+    Write-Host ''
+    Write-Host ('-' * 60) -ForegroundColor DarkGray
+    Write-Host ''
+
+    Write-Host "Version      : " -NoNewline -ForegroundColor DarkGray
+    Write-Host $metadata.Version -ForegroundColor Green
+
+    Write-Host "Channel      : " -NoNewline -ForegroundColor DarkGray
+    Write-Host $metadata.Channel -ForegroundColor Yellow
+
+    Write-Host "PowerShell   : " -NoNewline -ForegroundColor DarkGray
+    Write-Host $powerShellVersion -ForegroundColor White
+
+    Write-Host "Workspace    : " -NoNewline -ForegroundColor DarkGray
+    Write-Host $workspaceRoot -ForegroundColor Cyan
+
+    Write-Host "Toolkit      : " -NoNewline -ForegroundColor DarkGray
+    Write-Host $toolkitRoot -ForegroundColor Cyan
+
+    Write-Host "GitHub       : " -NoNewline -ForegroundColor DarkGray
+    Write-Host $metadata.GitHubUrl -ForegroundColor Blue
+
+    Write-Host ''
+    Write-Host ('-' * 60) -ForegroundColor DarkGray
+    Write-Host ''
 }

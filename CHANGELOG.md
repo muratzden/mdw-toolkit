@@ -6,6 +6,15 @@ The format is based on **Keep a Changelog** and this project follows **Semantic 
 
 ---
 
+## v0.1.3-alpha
+
+### Changed
+
+- Centralized workspace path management.
+- Consolidated toolkit version and metadata output.
+
+---
+
 ## v0.1.2-alpha
 
 ### Changed

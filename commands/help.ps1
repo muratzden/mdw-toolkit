@@ -5,38 +5,16 @@ PowerShell 5.1 / 7 compatible
 
 Set-StrictMode -Version 2.0
 
-function Get-MDWHelpWorkspacePath {
-    [CmdletBinding()]
-    param()
-
-    $toolkitRoot = Get-MDWRootPath
-    $workspacePath = Split-Path $toolkitRoot -Parent
-
-    try {
-        $config = Get-MDWConfig -ToolkitRoot $toolkitRoot
-        $configuredWorkspacePath = Get-MDWConfigValue -Config $config -Key "workspace.rootPath" -DefaultValue $null
-
-        if (-not [string]::IsNullOrWhiteSpace([string] $configuredWorkspacePath)) {
-            $workspacePath = [string] $configuredWorkspacePath
-        }
-    }
-    catch {
-        $workspacePath = Split-Path $toolkitRoot -Parent
-    }
-
-    return $workspacePath
-}
-
 function Invoke-MDWHelp {
     [CmdletBinding()]
     param(
         [string[]] $Arguments
     )
 
-    $version = "v0.1.2-alpha"
-    $toolkitRoot = Get-MDWRootPath
-    $workspacePath = Get-MDWHelpWorkspacePath
-    $githubUrl = "https://github.com/muratzden/mdw-toolkit"
+    $toolkitRoot = Get-MDWToolkitPath
+    $workspacePath = Get-MDWWorkspacePath
+    $config = Get-MDWConfig -ToolkitRoot $toolkitRoot
+    $metadata = Get-MDWToolkitMetadata -Config $config
 
     $commands = @(
         @{ Name = "mdw help"; Description = "Show this screen" }
@@ -50,11 +28,11 @@ function Invoke-MDWHelp {
         @{ Name = "mdw test"; Description = "Run test suite" }
     )
 
-    Write-MDWHeader -Title "MDW Toolkit" -Subtitle "Build | Validate | Test | Release WordPress Plugins"
-    Write-MDWInfoCard -Label "Version" -Value $version
+    Write-MDWHeader -Title $metadata.Name -Subtitle $metadata.Slogan
+    Write-MDWInfoCard -Label "Version" -Value ("v{0}" -f $metadata.Version)
     Write-MDWInfoCard -Label "Toolkit" -Value $toolkitRoot
     Write-MDWInfoCard -Label "Workspace" -Value $workspacePath
-    Write-MDWInfoCard -Label "GitHub" -Value $githubUrl
+    Write-MDWInfoCard -Label "GitHub" -Value $metadata.GitHubUrl
 
     Write-MDWSection -Title "Available Commands"
     Write-MDWCommandList -Commands $commands

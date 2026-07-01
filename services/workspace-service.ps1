@@ -75,16 +75,16 @@ function Invoke-MDWWorkspaceService {
         [string] $PluginSlug
     )
 
-    $toolkitRoot = Get-MDWRootPath
+    $toolkitRoot = Get-MDWToolkitPath
     $config = Get-MDWConfig -ToolkitRoot $toolkitRoot
 
-    $workspacePath = Get-MDWWorkspaceConfigValue -Config $config -PrimaryKey "workspace.rootPath" -FallbackKey "Workspace" -DefaultValue "C:\Workspace"
-    $pluginsRoot = Get-MDWWorkspaceConfigValue -Config $config -PrimaryKey "workspace.pluginsPath" -FallbackKey "Plugins" -DefaultValue "C:\Workspace\Plugins"
-    $buildRoot = Join-Path $workspacePath "Build"
-    $releasesRoot = Get-MDWWorkspaceConfigValue -Config $config -PrimaryKey "workspace.releasesPath" -FallbackKey "Releases" -DefaultValue (Join-Path $workspacePath "Releases")
-    $backupRoot = Get-MDWWorkspaceConfigValue -Config $config -PrimaryKey "workspace.backupPath" -FallbackKey "Backup" -DefaultValue "D:\Workspace Backup"
-    $toolkitVersion = Get-MDWWorkspaceConfigValue -Config $config -PrimaryKey "version" -FallbackKey "" -DefaultValue "0.1.2-alpha"
-    $configPath = $config._path
+    $workspacePath = Get-MDWWorkspacePath
+    $pluginsRoot = Get-MDWPluginsPath
+    $buildRoot = Get-MDWBuildPath
+    $releasesRoot = Get-MDWReleasePath
+    $backupRoot = Get-MDWBackupPath
+    $toolkitVersion = Get-MDWToolkitVersion -Config $config
+    $configPath = Get-MDWConfigPath -ToolkitRoot $toolkitRoot
 
     if ([string]::IsNullOrWhiteSpace($PluginSlug)) {
         $PluginSlug = Resolve-MDWWorkspaceCurrentPlugin -PluginsRoot $pluginsRoot -ReleasesRoot $releasesRoot
@@ -95,9 +95,9 @@ function Invoke-MDWWorkspaceService {
     $backupPath = $null
 
     if (-not [string]::IsNullOrWhiteSpace($PluginSlug)) {
-        $pluginPath = Join-Path $pluginsRoot $PluginSlug
-        $releasePath = Join-Path $releasesRoot $PluginSlug
-        $backupPath = Join-Path $backupRoot $PluginSlug
+        $pluginPath = Get-MDWPluginPath -PluginSlug $PluginSlug
+        $releasePath = Get-MDWReleasePluginPath -PluginSlug $PluginSlug
+        $backupPath = Get-MDWBackupPluginPath -PluginSlug $PluginSlug
     }
 
     $result = Invoke-MDWWorkspaceValidator `

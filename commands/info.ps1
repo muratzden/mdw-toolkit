@@ -19,7 +19,7 @@ function Invoke-MDWInfo {
 
     $result = Invoke-MDWWorkspaceService -PluginSlug $pluginSlug
 
-    Write-MDWHeader -Title "MDW Workspace" -Subtitle "Workspace Intelligence"
+    Write-MDWHeader -Title (Get-MDWToolkitName) -Subtitle "Workspace Intelligence"
 
     Write-MDWSection -Title "Workspace"
     Write-MDWInfoCard -Label "Toolkit" -Value $result.Workspace.ToolkitRoot

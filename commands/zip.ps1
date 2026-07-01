@@ -26,25 +26,20 @@ function Invoke-MDWZip {
         throw "Plugin slug could not be resolved."
     }
 
-    $toolkitRoot = Get-MDWRootPath
-    $workspaceRoot = Split-Path $toolkitRoot -Parent
-    $buildRoot = Join-Path $workspaceRoot "Build"
-    $releaseRoot = Join-Path $workspaceRoot "Releases"
-
-    $buildPath = Join-Path $buildRoot $pluginSlug
-    $releasePluginRoot = Join-Path $releaseRoot $pluginSlug
+    $buildPath = Get-MDWBuildPluginPath -PluginSlug $pluginSlug
+    $releasePluginRoot = Get-MDWReleasePluginPath -PluginSlug $pluginSlug
     $zipPath = Join-Path $releasePluginRoot "$pluginSlug.zip"
 
-    if (-not (Test-Path $buildPath -PathType Container)) {
+    if (-not (Test-Path -LiteralPath $buildPath -PathType Container)) {
         throw "Build directory not found. Run first: mdw build $pluginSlug"
     }
 
-    if (-not (Test-Path $releasePluginRoot)) {
+    if (-not (Test-Path -LiteralPath $releasePluginRoot)) {
         New-Item -ItemType Directory -Path $releasePluginRoot -Force | Out-Null
     }
 
-    if (Test-Path $zipPath) {
-        Remove-Item -Path $zipPath -Force
+    if (Test-Path -LiteralPath $zipPath) {
+        Remove-Item -LiteralPath $zipPath -Force
     }
 
     Write-MDWHeader -Title "ZIP Package" -Subtitle $pluginSlug
@@ -74,14 +69,14 @@ function Invoke-MDWZip {
             -Force
     }
     finally {
-        if (Test-Path $temporaryZipRoot) {
-            Remove-Item -Path $temporaryZipRoot -Recurse -Force -ErrorAction SilentlyContinue
+        if (Test-Path -LiteralPath $temporaryZipRoot) {
+            Remove-Item -LiteralPath $temporaryZipRoot -Recurse -Force -ErrorAction SilentlyContinue
         }
     }
 
     $zipSize = 0
 
-    if (Test-Path $zipPath -PathType Leaf) {
+    if (Test-Path -LiteralPath $zipPath -PathType Leaf) {
         $zipSize = [math]::Round(((Get-Item -LiteralPath $zipPath).Length / 1MB), 2)
     }
 

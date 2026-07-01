@@ -28,17 +28,14 @@ function Invoke-MDWClean {
 
     Write-Host "[MDW] Clean started: $pluginSlug" -ForegroundColor Cyan
 
-    $toolkitRoot = Get-MDWRootPath
-    $workspaceRoot = Split-Path $toolkitRoot -Parent
-    $pluginsRoot = Join-Path $workspaceRoot "Plugins"
-
-    $pluginPath = Join-Path $pluginsRoot $pluginSlug
-    $buildPath = Join-Path (Join-Path $workspaceRoot "Build") $pluginSlug
-    $releasePath = Join-Path (Join-Path $workspaceRoot "Releases") $pluginSlug
+    $toolkitRoot = Get-MDWToolkitPath
+    $pluginPath = Get-MDWPluginPath -PluginSlug $pluginSlug
+    $buildPath = Get-MDWBuildPluginPath -PluginSlug $pluginSlug
+    $releasePath = Get-MDWReleasePluginPath -PluginSlug $pluginSlug
     $legacyBuildPath = Join-Path (Join-Path $toolkitRoot "build") $pluginSlug
     $legacyReleasePath = Join-Path (Join-Path $toolkitRoot "releases") $pluginSlug
 
-    if (-not (Test-Path $pluginPath)) {
+    if (-not (Test-Path -LiteralPath $pluginPath -PathType Container)) {
         throw "Plugin directory not found: $pluginPath"
     }
 
@@ -50,8 +47,8 @@ function Invoke-MDWClean {
     )
 
     foreach ($path in $pathsToClean) {
-        if (Test-Path $path) {
-            Remove-Item -Path $path -Recurse -Force
+        if (Test-Path -LiteralPath $path) {
+            Remove-Item -LiteralPath $path -Recurse -Force
             Write-Host "[MDW] Removed: $path"
         }
     }
@@ -64,9 +61,9 @@ function Invoke-MDWClean {
     )
 
     foreach ($pattern in $temporaryPatterns) {
-        Get-ChildItem -Path $pluginPath -Filter $pattern -Recurse -Force -ErrorAction SilentlyContinue |
+        Get-ChildItem -LiteralPath $pluginPath -Filter $pattern -Recurse -Force -ErrorAction SilentlyContinue |
             ForEach-Object {
-                Remove-Item -Path $_.FullName -Force
+                Remove-Item -LiteralPath $_.FullName -Force
                 Write-Host "[MDW] Removed temp file: $($_.FullName)"
             }
     }

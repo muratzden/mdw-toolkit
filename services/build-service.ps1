@@ -71,18 +71,16 @@ function Invoke-MDWBuildService {
     }
 
     $pluginPath = Resolve-MDWPluginPath -PluginSlug $PluginSlug -RequireExisting
-
-    $toolkitRoot = Get-MDWRootPath
-    $buildRoot = Join-Path (Split-Path $toolkitRoot -Parent) "Build"
-    $targetPath = Join-Path $buildRoot $PluginSlug
+    $targetPath = Get-MDWBuildPluginPath -PluginSlug $PluginSlug
+    $toolkitRoot = Get-MDWToolkitPath
     $legacyTargetPath = Join-Path (Join-Path $toolkitRoot "build") $PluginSlug
 
-    if (Test-Path $targetPath) {
-        Remove-Item -Path $targetPath -Recurse -Force
+    if (Test-Path -LiteralPath $targetPath) {
+        Remove-Item -LiteralPath $targetPath -Recurse -Force
     }
 
-    if (Test-Path $legacyTargetPath) {
-        Remove-Item -Path $legacyTargetPath -Recurse -Force
+    if (Test-Path -LiteralPath $legacyTargetPath) {
+        Remove-Item -LiteralPath $legacyTargetPath -Recurse -Force
     }
 
     New-Item -ItemType Directory -Path $targetPath -Force | Out-Null

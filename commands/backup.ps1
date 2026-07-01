@@ -26,28 +26,25 @@ function Invoke-MDWBackup {
         throw "Plugin slug could not be resolved."
     }
 
-    $pluginsRoot = "C:\Workspace\Plugins"
-    $backupRoot = "D:\Workspace Backup"
+    $pluginPath = Get-MDWPluginPath -PluginSlug $pluginSlug
 
-    $pluginPath = Join-Path $pluginsRoot $pluginSlug
-
-    if (-not (Test-Path $pluginPath)) {
+    if (-not (Test-Path -LiteralPath $pluginPath -PathType Container)) {
         throw "Plugin directory not found: $pluginPath"
     }
 
     $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
-    $pluginBackupRoot = Join-Path $backupRoot $pluginSlug
+    $pluginBackupRoot = Get-MDWBackupPluginPath -PluginSlug $pluginSlug
     $backupPath = Join-Path $pluginBackupRoot $timestamp
 
     Write-Host "[MDW] Backup started: $pluginSlug" -ForegroundColor Cyan
 
-    if (-not (Test-Path $pluginBackupRoot)) {
+    if (-not (Test-Path -LiteralPath $pluginBackupRoot)) {
         New-Item -ItemType Directory -Path $pluginBackupRoot -Force | Out-Null
     }
 
     New-Item -ItemType Directory -Path $backupPath -Force | Out-Null
 
-    Get-ChildItem -Path $pluginPath -Force | Where-Object {
+    Get-ChildItem -LiteralPath $pluginPath -Force | Where-Object {
         $_.Name -notin @(
             ".git",
             "node_modules",
@@ -57,7 +54,7 @@ function Invoke-MDWBackup {
             ".DS_Store"
         )
     } | ForEach-Object {
-        Copy-Item -Path $_.FullName -Destination $backupPath -Recurse -Force
+        Copy-Item -LiteralPath $_.FullName -Destination $backupPath -Recurse -Force
     }
 
     Write-Host "[MDW] Source: $pluginPath"

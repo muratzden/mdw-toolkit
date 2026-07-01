@@ -94,9 +94,12 @@ function Invoke-MDWEnvironmentValidator {
         $checks.Add((New-MDWEnvironmentCheckResult -Name "WordPress Plugin Check CLI" -Passed $false -Message $pluginCheckMessage -Severity "Warning"))
     }
 
+    $pluginsPath = Get-MDWPluginsPath
+    $backupPath = Get-MDWBackupPath
+
     $pathChecks = @(
-        @{ Name = "Plugins directory"; Path = "C:\Workspace\Plugins"; Missing = "Plugins directory not found: C:\Workspace\Plugins" }
-        @{ Name = "Backup directory"; Path = "D:\Workspace Backup"; Missing = "Backup directory not found: D:\Workspace Backup" }
+        @{ Name = "Plugins directory"; Path = $pluginsPath; Missing = "Plugins directory not found: $pluginsPath" }
+        @{ Name = "Backup directory"; Path = $backupPath; Missing = "Backup directory not found: $backupPath" }
     )
 
     foreach ($pathCheck in $pathChecks) {

@@ -37,10 +37,10 @@ function Invoke-MDWNew {
         throw "Invalid plugin slug: $pluginSlug. Use lowercase letters, numbers, and single hyphens only."
     }
 
-    $pluginsRoot = "C:\Workspace\Plugins"
-    $projectPath = Join-Path $pluginsRoot $pluginSlug
+    $pluginsRoot = Get-MDWPluginsPath
+    $projectPath = Get-MDWPluginPath -PluginSlug $pluginSlug
 
-    if (Test-Path $projectPath) {
+    if (Test-Path -LiteralPath $projectPath) {
         throw "Plugin directory already exists: $projectPath"
     }
 
@@ -62,7 +62,7 @@ function Invoke-MDWNew {
     $createdProjectRoot = $false
 
     try {
-        if (-not (Test-Path $pluginsRoot)) {
+        if (-not (Test-Path -LiteralPath $pluginsRoot)) {
             New-Item -ItemType Directory -Path $pluginsRoot -Force | Out-Null
         }
 
@@ -195,8 +195,8 @@ dist/
         Write-Host "[MDW] Plugin created: $projectPath" -ForegroundColor Green
     }
     catch {
-        if ($createdProjectRoot -and (Test-Path $projectPath)) {
-            Remove-Item -Path $projectPath -Recurse -Force -ErrorAction SilentlyContinue
+        if ($createdProjectRoot -and (Test-Path -LiteralPath $projectPath)) {
+            Remove-Item -LiteralPath $projectPath -Recurse -Force -ErrorAction SilentlyContinue
         }
 
         throw
