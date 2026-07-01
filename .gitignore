@@ -2,3 +2,7 @@
 *.tmp
 .vscode/
 .idea/
+build/
+releases/
+logs/
+*.zip

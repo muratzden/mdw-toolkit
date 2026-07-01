@@ -1,0 +1,17 @@
+{
+  "name": "mdw-toolkit",
+  "version": "0.1.0",
+  "workspace": {
+    "rootPath": "C:\\Workspace",
+    "pluginsPath": "C:\\Workspace\\Plugins",
+    "backupPath": "D:\\Workspace Backup",
+    "releasesPath": "C:\\Workspace\\Releases"
+  },
+  "git": {
+    "defaultBranch": "main"
+  },
+  "wordpress": {
+    "minimumPhpVersion": "7.4",
+    "minimumWordPressVersion": "6.5"
+  }
+}

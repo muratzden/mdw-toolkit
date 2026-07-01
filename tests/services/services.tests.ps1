@@ -1,0 +1,22 @@
+$tests = New-Object System.Collections.Generic.List[object]
+
+$services = @(
+    @{ Name = "Build"; EntryPoint = "Invoke-MDWBuildService" }
+    @{ Name = "Check"; EntryPoint = "Invoke-MDWCheckService" }
+    @{ Name = "Release"; EntryPoint = "Invoke-MDWRelease" }
+    @{ Name = "Doctor"; EntryPoint = "Invoke-MDWDoctorService" }
+    @{ Name = "Plugin Check"; EntryPoint = "Invoke-MDWPluginCheckService" }
+    @{ Name = "Init"; EntryPoint = "Invoke-MDWInitService" }
+    @{ Name = "Workspace"; EntryPoint = "Invoke-MDWWorkspaceService" }
+)
+
+foreach ($service in $services) {
+    $tests.Add(@{
+        Name = $service.Name
+        Passed = $null -ne (Get-Command $service.EntryPoint -ErrorAction SilentlyContinue)
+        Duration = 0
+        Message = ""
+    })
+}
+
+return @($tests.ToArray())
