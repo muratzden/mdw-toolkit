@@ -174,7 +174,7 @@ MDW Toolkit is built around a few simple principles.
 
 Current Version
 
-**0.1.0-alpha**
+**0.1.2-alpha**
 
 Project Status
 

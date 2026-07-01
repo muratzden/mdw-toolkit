@@ -70,8 +70,6 @@ function Invoke-MDWBuildService {
         throw "Plugin slug could not be resolved."
     }
 
-    Write-Host "[MDW] Build started: $PluginSlug" -ForegroundColor Cyan
-
     $pluginPath = Resolve-MDWPluginPath -PluginSlug $PluginSlug -RequireExisting
 
     $toolkitRoot = Get-MDWRootPath
@@ -91,7 +89,10 @@ function Invoke-MDWBuildService {
 
     Copy-MDWBuildProductionContent -SourcePath $pluginPath -TargetPath $targetPath
 
-    Write-Host "[MDW] Source: $pluginPath"
-    Write-Host "[MDW] Build:  $targetPath"
-    Write-Host "[MDW] Build completed: $PluginSlug" -ForegroundColor Green
+    return @{
+        Passed     = $true
+        PluginSlug = $PluginSlug
+        SourcePath = $pluginPath
+        BuildPath  = $targetPath
+    }
 }

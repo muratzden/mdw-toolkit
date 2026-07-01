@@ -26,32 +26,32 @@ function Invoke-MDWCheck {
         throw "Plugin slug could not be resolved."
     }
 
-    Write-Host "[MDW] Check started: $pluginSlug" -ForegroundColor Cyan
+    Write-MDWHeader -Title "Plugin Check" -Subtitle $pluginSlug
+    Write-MDWStep -Name "Checking plugin folder" -Status "INFO"
 
     $result = Invoke-MDWCheckService -PluginSlug $pluginSlug
 
-    Write-Host "[MDW] Plugin path: $($result.PluginPath)"
+    Write-MDWStatusLine -Status "OK" -Message ("Plugin folder found: {0}" -f $result.PluginPath)
+    Write-MDWStatusLine -Status "OK" -Message "Validation rules completed."
 
     if ($result.WarningCount -gt 0) {
-        Write-Host ""
-        Write-Host "[MDW] Warnings:" -ForegroundColor Yellow
+        Write-MDWSection -Title "Warnings"
 
         foreach ($warning in $result.Warnings) {
-            Write-Host "  - $warning" -ForegroundColor Yellow
+            Write-MDWStatusLine -Status "WARN" -Message $warning
         }
     }
 
     if ($result.ErrorCount -gt 0) {
-        Write-Host ""
-        Write-Host "[MDW] Errors:" -ForegroundColor Red
+        Write-MDWSection -Title "Errors"
 
         foreach ($errorItem in $result.Errors) {
-            Write-Host "  - $errorItem" -ForegroundColor Red
+            Write-MDWStatusLine -Status "FAIL" -Message $errorItem
         }
 
         throw "Check failed with $($result.ErrorCount) error(s)."
     }
 
+    Write-MDWStatusLine -Status "OK" -Message "Check complete."
     Write-Host ""
-    Write-Host "[MDW] Check completed: $pluginSlug" -ForegroundColor Green
 }

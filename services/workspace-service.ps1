@@ -80,9 +80,11 @@ function Invoke-MDWWorkspaceService {
 
     $workspacePath = Get-MDWWorkspaceConfigValue -Config $config -PrimaryKey "workspace.rootPath" -FallbackKey "Workspace" -DefaultValue "C:\Workspace"
     $pluginsRoot = Get-MDWWorkspaceConfigValue -Config $config -PrimaryKey "workspace.pluginsPath" -FallbackKey "Plugins" -DefaultValue "C:\Workspace\Plugins"
-    $releasesRoot = Join-Path $toolkitRoot "releases"
+    $buildRoot = Join-Path $workspacePath "Build"
+    $releasesRoot = Get-MDWWorkspaceConfigValue -Config $config -PrimaryKey "workspace.releasesPath" -FallbackKey "Releases" -DefaultValue (Join-Path $workspacePath "Releases")
     $backupRoot = Get-MDWWorkspaceConfigValue -Config $config -PrimaryKey "workspace.backupPath" -FallbackKey "Backup" -DefaultValue "D:\Workspace Backup"
-    $toolkitVersion = Get-MDWWorkspaceConfigValue -Config $config -PrimaryKey "version" -FallbackKey "" -DefaultValue "0.1.0"
+    $toolkitVersion = Get-MDWWorkspaceConfigValue -Config $config -PrimaryKey "version" -FallbackKey "" -DefaultValue "0.1.2-alpha"
+    $configPath = $config._path
 
     if ([string]::IsNullOrWhiteSpace($PluginSlug)) {
         $PluginSlug = Resolve-MDWWorkspaceCurrentPlugin -PluginsRoot $pluginsRoot -ReleasesRoot $releasesRoot
@@ -107,6 +109,11 @@ function Invoke-MDWWorkspaceService {
         -BackupPath $backupPath
 
     $result.Workspace.ToolkitVersion = $toolkitVersion
+    $result.Workspace.PluginsPath = $pluginsRoot
+    $result.Workspace.BuildPath = $buildRoot
+    $result.Workspace.ReleasesPath = $releasesRoot
+    $result.Workspace.BackupPath = $backupRoot
+    $result.Workspace.ConfigPath = $configPath
 
     return $result
 }

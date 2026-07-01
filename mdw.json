@@ -1,6 +1,6 @@
 {
   "name": "mdw-toolkit",
-  "version": "0.1.0",
+  "version": "0.1.2-alpha",
   "workspace": {
     "rootPath": "C:\\Workspace",
     "pluginsPath": "C:\\Workspace\\Plugins",

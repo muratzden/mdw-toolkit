@@ -5,21 +5,6 @@ PowerShell 5.1 / 7 compatible
 
 Set-StrictMode -Version 2.0
 
-function Write-MDWInfoStatus {
-    [CmdletBinding()]
-    param(
-        [bool] $Passed,
-        [string] $Text
-    )
-
-    if ($Passed) {
-        Write-Host ("[OK] {0}" -f $Text) -ForegroundColor Green
-    }
-    else {
-        Write-Host ("[WARN] {0}" -f $Text) -ForegroundColor Yellow
-    }
-}
-
 function Invoke-MDWInfo {
     [CmdletBinding()]
     param(
@@ -34,62 +19,46 @@ function Invoke-MDWInfo {
 
     $result = Invoke-MDWWorkspaceService -PluginSlug $pluginSlug
 
-    Write-Host ""
-    Write-Host "MDW Workspace" -ForegroundColor Cyan
-    Write-Host ""
+    Write-MDWHeader -Title "MDW Workspace" -Subtitle "Workspace Intelligence"
 
-    Write-Host "Workspace" -ForegroundColor Yellow
-    Write-MDWInfoStatus -Passed (Test-Path -LiteralPath $result.Workspace.Path -PathType Container) -Text $result.Workspace.Path
-    Write-Host ("Toolkit Version: {0}" -f $result.Workspace.ToolkitVersion)
-    Write-Host ""
+    Write-MDWSection -Title "Workspace"
+    Write-MDWInfoCard -Label "Toolkit" -Value $result.Workspace.ToolkitRoot
+    Write-MDWInfoCard -Label "Workspace" -Value $result.Workspace.Path
+    Write-MDWInfoCard -Label "Plugins" -Value $result.Workspace.PluginsPath
+    Write-MDWInfoCard -Label "Build" -Value $result.Workspace.BuildPath
+    Write-MDWInfoCard -Label "Releases" -Value $result.Workspace.ReleasesPath
+    Write-MDWInfoCard -Label "Backup" -Value $result.Workspace.BackupPath
+    Write-MDWInfoCard -Label "Config" -Value $result.Workspace.ConfigPath
+    Write-MDWInfoCard -Label "Version" -Value $result.Workspace.ToolkitVersion
 
-    Write-Host "Current Plugin" -ForegroundColor Yellow
+    Write-MDWSection -Title "Current Plugin"
+    Write-MDWInfoCard -Label "Plugin" -Value $result.Plugin.Slug
+    Write-MDWInfoCard -Label "Version" -Value $result.Plugin.Version
+    Write-MDWInfoCard -Label "Path" -Value $result.Plugin.Path
 
-    if ($result.Plugin.Slug) {
-        Write-Host $result.Plugin.Slug
+    Write-MDWSection -Title "Git"
+    if ($result.Git.Available) {
+        Write-MDWStatusLine -Status "OK" -Message $result.Git.Branch
     }
     else {
-        Write-Host "(none)" -ForegroundColor Yellow
+        Write-MDWStatusLine -Status "WARN" -Message $result.Git.Status
     }
+    Write-MDWInfoCard -Label "Status" -Value $result.Git.Status
 
-    Write-Host ""
-    Write-Host "Plugin Version" -ForegroundColor Yellow
-    Write-Host ($(if ($result.Plugin.Version) { $result.Plugin.Version } else { "(unknown)" }))
-    Write-Host ""
-
-    Write-Host "Plugin Path" -ForegroundColor Yellow
-    Write-Host ($(if ($result.Plugin.Path) { $result.Plugin.Path } else { "(none)" }))
-    Write-Host ""
-
-    Write-Host "Git" -ForegroundColor Yellow
-    Write-MDWInfoStatus -Passed $result.Git.Available -Text ($(if ($result.Git.Branch) { $result.Git.Branch } else { $result.Git.Status }))
-    Write-Host $result.Git.Status
-    Write-Host ""
-
-    Write-Host "Build" -ForegroundColor Yellow
-    Write-Host "Last ZIP"
-    Write-Host ($(if ($result.Release.Package) { $result.Release.Package } else { "(none)" }))
-    Write-Host ""
-
-    Write-Host "Release" -ForegroundColor Yellow
-    Write-Host "Last Release"
-
+    Write-MDWSection -Title "Release"
+    Write-MDWInfoCard -Label "Last ZIP" -Value $result.Release.Package
     if ($result.Release.LastReleaseDate) {
-        Write-Host ([datetime] $result.Release.LastReleaseDate).ToString("yyyy-MM-dd HH:mm")
+        Write-MDWInfoCard -Label "Last Release" -Value ([datetime] $result.Release.LastReleaseDate).ToString("yyyy-MM-dd HH:mm")
     }
     else {
-        Write-Host "(none)"
+        Write-MDWInfoCard -Label "Last Release" -Value $null
     }
+    Write-MDWInfoCard -Label "Backups" -Value $result.Release.BackupCount
 
-    Write-Host ""
-    Write-Host "Backups" -ForegroundColor Yellow
-    Write-Host $result.Release.BackupCount
-    Write-Host ""
-
-    Write-Host "Environment" -ForegroundColor Yellow
-    Write-MDWInfoStatus -Passed $result.Environment.PHP.Available -Text ($(if ($result.Environment.PHP.Version) { $result.Environment.PHP.Version } else { "PHP" }))
-    Write-MDWInfoStatus -Passed $result.Environment.Composer.Available -Text ($(if ($result.Environment.Composer.Version) { $result.Environment.Composer.Version } else { "Composer" }))
-    Write-MDWInfoStatus -Passed $result.Environment.PluginCheck.Available -Text "Plugin Check"
-    Write-MDWInfoStatus -Passed $result.Environment.SVN.Available -Text ($(if ($result.Environment.SVN.Version) { "SVN $($result.Environment.SVN.Version)" } else { "SVN" }))
+    Write-MDWSection -Title "Environment"
+    Write-MDWStatusLine -Status ($(if ($result.Environment.PHP.Available) { "OK" } else { "WARN" })) -Message ($(if ($result.Environment.PHP.Version) { $result.Environment.PHP.Version } else { "PHP not available" }))
+    Write-MDWStatusLine -Status ($(if ($result.Environment.Composer.Available) { "OK" } else { "WARN" })) -Message ($(if ($result.Environment.Composer.Version) { $result.Environment.Composer.Version } else { "Composer not available" }))
+    Write-MDWStatusLine -Status ($(if ($result.Environment.PluginCheck.Available) { "OK" } else { "WARN" })) -Message "WordPress Plugin Check"
+    Write-MDWStatusLine -Status ($(if ($result.Environment.SVN.Available) { "OK" } else { "WARN" })) -Message ($(if ($result.Environment.SVN.Version) { "SVN $($result.Environment.SVN.Version)" } else { "SVN not available" }))
     Write-Host ""
 }

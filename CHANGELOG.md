@@ -6,6 +6,17 @@ The format is based on **Keep a Changelog** and this project follows **Semantic 
 
 ---
 
+## v0.1.2-alpha
+
+### Changed
+
+* Improved CLI home screen.
+* Improved help output.
+* Added professional command output formatting.
+* Improved info, doctor, check, build, zip, release and test command readability.
+
+---
+
 ## [0.1.1-alpha] - Unreleased
 
 ### Added

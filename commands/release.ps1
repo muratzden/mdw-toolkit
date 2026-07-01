@@ -26,13 +26,25 @@ function Invoke-MDWRelease {
         throw "Plugin slug could not be resolved."
     }
 
-    Write-Host "[MDW] Release started: $pluginSlug" -ForegroundColor Cyan
+    Write-MDWHeader -Title "Release Pipeline" -Subtitle $pluginSlug
+    Write-MDWPipeline -Steps @("Backup", "Clean", "Build", "Check", "ZIP", "Release Complete")
 
+    Write-MDWSection -Title "Running"
+    Write-MDWStep -Name "Backup" -Status "INFO"
     Invoke-MDWBackup -Arguments @($pluginSlug)
+
+    Write-MDWStep -Name "Clean" -Status "INFO"
     Invoke-MDWClean -Arguments @($pluginSlug)
+
+    Write-MDWStep -Name "Build" -Status "INFO"
     Invoke-MDWBuild -Arguments @($pluginSlug)
+
+    Write-MDWStep -Name "Check" -Status "INFO"
     Invoke-MDWCheck -Arguments @($pluginSlug)
+
+    Write-MDWStep -Name "ZIP" -Status "INFO"
     Invoke-MDWZip -Arguments @($pluginSlug)
 
-    Write-Host "[MDW] Release completed: $pluginSlug" -ForegroundColor Green
+    Write-MDWStatusLine -Status "OK" -Message "Release complete."
+    Write-Host ""
 }

@@ -11,6 +11,7 @@ $MDWRoot = Split-Path -Parent $PSScriptRoot
 $MDWCoreFiles = @(
     "logger.ps1",
     "config.ps1",
+    "cli-ui.ps1",
     "command-registry.ps1",
     "test-runner.ps1"
 )

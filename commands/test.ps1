@@ -11,8 +11,7 @@ function Invoke-MDWTest {
         [string[]] $Arguments
     )
 
-    Write-Host "Running MDW Tests..." -ForegroundColor Cyan
-    Write-Host ""
+    Write-MDWHeader -Title "MDW Tests" -Subtitle "Automated Test Suite"
 
     $result = Invoke-MDWTestService
     $currentCategory = $null
@@ -20,39 +19,30 @@ function Invoke-MDWTest {
     foreach ($test in $result.Tests) {
         if ($currentCategory -ne $test.Category) {
             $currentCategory = $test.Category
-            Write-Host $currentCategory -ForegroundColor Yellow
-            Write-Host ""
+            Write-MDWSection -Title $currentCategory
         }
 
         if ($test.Passed) {
-            Write-Host ("OK {0}" -f $test.Name) -ForegroundColor Green
+            Write-MDWStatusLine -Status "OK" -Message $test.Name
         }
         else {
-            Write-Host ("FAIL {0} - {1}" -f $test.Name, $test.Message) -ForegroundColor Red
+            Write-MDWStatusLine -Status "FAIL" -Message ("{0} - {1}" -f $test.Name, $test.Message)
         }
     }
 
     if ($result.WarningCount -gt 0) {
-        Write-Host ""
-        Write-Host "Warnings" -ForegroundColor Yellow
+        Write-MDWSection -Title "Warnings"
 
         foreach ($warning in $result.Warnings) {
-            Write-Host ("- {0}" -f $warning) -ForegroundColor Yellow
+            Write-MDWStatusLine -Status "WARN" -Message $warning
         }
     }
 
-    Write-Host ""
-    Write-Host "----------------------------------------"
-    Write-Host ""
-    Write-Host ("Passed : {0}" -f $result.PassedCount)
-    Write-Host ""
-    Write-Host ("Failed : {0}" -f $result.FailedCount)
-    Write-Host ""
-    Write-Host ("Warnings : {0}" -f $result.WarningCount)
-    Write-Host ""
-    Write-Host ("Duration : {0:N2} sec" -f $result.Duration)
+    Write-MDWTestSummary -Result $result
 
     if (-not $result.Passed) {
         throw "MDW tests failed with $($result.FailedCount) failure(s)."
     }
+
+    Write-Host ""
 }

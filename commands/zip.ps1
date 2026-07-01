@@ -47,7 +47,8 @@ function Invoke-MDWZip {
         Remove-Item -Path $zipPath -Force
     }
 
-    Write-Host "[MDW] ZIP started: $pluginSlug" -ForegroundColor Cyan
+    Write-MDWHeader -Title "ZIP Package" -Subtitle $pluginSlug
+    Write-MDWStep -Name "Collecting build output" -Status "INFO"
 
     $buildItems = Get-ChildItem -LiteralPath $buildPath -Force
 
@@ -65,6 +66,8 @@ function Invoke-MDWZip {
             Copy-Item -LiteralPath $item.FullName -Destination $temporaryPluginPath -Recurse -Force
         }
 
+        Write-MDWStep -Name "Creating archive" -Status "INFO"
+
         Compress-Archive `
             -Path $temporaryPluginPath `
             -DestinationPath $zipPath `
@@ -76,6 +79,17 @@ function Invoke-MDWZip {
         }
     }
 
-    Write-Host "[MDW] ZIP: $zipPath"
-    Write-Host "[MDW] ZIP completed: $pluginSlug" -ForegroundColor Green
+    $zipSize = 0
+
+    if (Test-Path $zipPath -PathType Leaf) {
+        $zipSize = [math]::Round(((Get-Item -LiteralPath $zipPath).Length / 1MB), 2)
+    }
+
+    Write-MDWSection -Title "ZIP Output"
+    Write-MDWInfoCard -Label "Source" -Value $buildPath
+    Write-MDWInfoCard -Label "Destination" -Value $releasePluginRoot
+    Write-MDWInfoCard -Label "ZIP file" -Value $zipPath
+    Write-MDWInfoCard -Label "Size" -Value ("{0} MB" -f $zipSize)
+    Write-MDWStatusLine -Status "OK" -Message "ZIP package created."
+    Write-Host ""
 }
