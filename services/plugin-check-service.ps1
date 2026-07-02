@@ -1,5 +1,5 @@
-<#
-MDW Internal Plugin Check Service
+﻿<#
+MDW Plugin Check Service
 PowerShell 5.1 / 7 compatible
 #>
 
@@ -117,45 +117,15 @@ function Test-MDWPluginStructure {
         $items.Add((New-MDWPluginCheckItem -Name "readme.txt" -Status "WARN" -Message "readme.txt not found"))
     }
 
-    if (Test-Path -LiteralPath $languagesPath) {
-        if (Test-Path -LiteralPath $languagesPath -PathType Container) {
-            $items.Add((New-MDWPluginCheckItem -Name "languages" -Status "OK" -Message "languages directory is in the plugin root"))
-        }
-        else {
-            $items.Add((New-MDWPluginCheckItem -Name "languages" -Status "WARN" -Message "languages exists but is not a directory"))
-        }
-    }
+    foreach ($directoryPath in @($languagesPath, $assetsPath)) {
+        $directoryName = Split-Path $directoryPath -Leaf
 
-    if (Test-Path -LiteralPath $assetsPath) {
-        if (Test-Path -LiteralPath $assetsPath -PathType Container) {
-            $items.Add((New-MDWPluginCheckItem -Name "assets" -Status "OK" -Message "assets directory is in the plugin root"))
-        }
-        else {
-            $items.Add((New-MDWPluginCheckItem -Name "assets" -Status "WARN" -Message "assets exists but is not a directory"))
+        if (Test-Path -LiteralPath $directoryPath -PathType Container) {
+            $items.Add((New-MDWPluginCheckItem -Name $directoryName -Status "OK" -Message "$directoryName directory is in the plugin root"))
         }
     }
 
     return New-MDWPluginCheckSection -Name "Structure" -Items @($items.ToArray())
-}
-
-function Test-MDWPluginMainFile {
-    [CmdletBinding()]
-    param(
-        [string] $PluginSlug,
-        [string] $PluginPath
-    )
-
-    $mainFile = Get-MDWPluginMainFilePath -PluginSlug $PluginSlug -PluginPath $PluginPath
-    $items = @()
-
-    if (Test-Path -LiteralPath $mainFile -PathType Leaf) {
-        $items += New-MDWPluginCheckItem -Name "Main plugin file" -Status "OK" -Message $mainFile
-    }
-    else {
-        $items += New-MDWPluginCheckItem -Name "Main plugin file" -Status "FAIL" -Message "Main plugin file not found: $mainFile"
-    }
-
-    return New-MDWPluginCheckSection -Name "Main File" -Items $items
 }
 
 function Test-MDWPluginHeaders {
@@ -241,7 +211,6 @@ function Test-MDWPluginTextDomain {
 
     $items = New-Object System.Collections.Generic.List[object]
     $mainFile = Get-MDWPluginMainFilePath -PluginSlug $PluginSlug -PluginPath $PluginPath
-    $readmeFile = Join-Path $PluginPath "readme.txt"
     $textDomain = $null
 
     if (Test-Path -LiteralPath $mainFile -PathType Leaf) {
@@ -257,17 +226,6 @@ function Test-MDWPluginTextDomain {
     }
     else {
         $items.Add((New-MDWPluginCheckItem -Name "Text Domain" -Status "WARN" -Message "Text Domain '$textDomain' does not match plugin slug '$PluginSlug'."))
-    }
-
-    if (Test-Path -LiteralPath $readmeFile -PathType Leaf) {
-        $readmeContent = Get-Content -LiteralPath $readmeFile -Raw -ErrorAction SilentlyContinue
-
-        if (-not [string]::IsNullOrWhiteSpace($textDomain) -and $readmeContent -match [regex]::Escape($textDomain)) {
-            $items.Add((New-MDWPluginCheckItem -Name "Readme text domain" -Status "OK" -Message "readme.txt references the text domain"))
-        }
-        else {
-            $items.Add((New-MDWPluginCheckItem -Name "Readme text domain" -Status "WARN" -Message "readme.txt does not reference the plugin text domain"))
-        }
     }
 
     return New-MDWPluginCheckSection -Name "Text Domain" -Items @($items.ToArray())
@@ -316,15 +274,6 @@ function Test-MDWPluginLicense {
         $items.Add((New-MDWPluginCheckItem -Name "Readme License" -Status "WARN" -Message "readme.txt license may not be GPL-compatible: $readmeLicense"))
     }
 
-    if (-not [string]::IsNullOrWhiteSpace($pluginLicense) -and -not [string]::IsNullOrWhiteSpace($readmeLicense)) {
-        if ($pluginLicense -eq $readmeLicense) {
-            $items.Add((New-MDWPluginCheckItem -Name "License consistency" -Status "OK" -Message "Plugin header and readme license match"))
-        }
-        else {
-            $items.Add((New-MDWPluginCheckItem -Name "License consistency" -Status "WARN" -Message "Plugin header and readme license do not match"))
-        }
-    }
-
     return New-MDWPluginCheckSection -Name "License" -Items @($items.ToArray())
 }
 
@@ -340,13 +289,8 @@ function Test-MDWPluginAssets {
     foreach ($directoryName in @("assets", "languages")) {
         $directoryPath = Join-Path $PluginPath $directoryName
 
-        if (Test-Path -LiteralPath $directoryPath) {
-            if (Test-Path -LiteralPath $directoryPath -PathType Container) {
-                $items.Add((New-MDWPluginCheckItem -Name $directoryName -Status "OK" -Message "$directoryName directory is valid"))
-            }
-            else {
-                $items.Add((New-MDWPluginCheckItem -Name $directoryName -Status "WARN" -Message "$directoryName exists but is not a directory"))
-            }
+        if (Test-Path -LiteralPath $directoryPath -PathType Container) {
+            $items.Add((New-MDWPluginCheckItem -Name $directoryName -Status "OK" -Message "$directoryName directory is valid"))
         }
         else {
             $items.Add((New-MDWPluginCheckItem -Name $directoryName -Status "OK" -Message "$directoryName directory is optional"))
@@ -365,8 +309,7 @@ function Test-MDWPluginForbiddenFiles {
 
     $items = New-Object System.Collections.Generic.List[object]
     $forbiddenNames = @(".git", ".github", "node_modules", "tests", ".DS_Store", "Thumbs.db", ".env", ".env.local", "package-lock.json", "composer.lock")
-    $forbiddenPatterns = @("*.log", "*.tmp")
-    $forbiddenRelativePaths = @((Join-Path "vendor" "bin"))
+    $forbiddenPatterns = @("*.log", "*.tmp", "*.zip")
     $found = New-Object System.Collections.Generic.List[string]
 
     if (Test-Path -LiteralPath $PluginPath -PathType Container) {
@@ -380,14 +323,6 @@ function Test-MDWPluginForbiddenFiles {
                         $found.Add($_.FullName.Substring($PluginPath.Length).TrimStart("\", "/"))
                     }
                 }
-            }
-        }
-
-        foreach ($relativePath in $forbiddenRelativePaths) {
-            $path = Join-Path $PluginPath $relativePath
-
-            if (Test-Path -LiteralPath $path) {
-                $found.Add($relativePath)
             }
         }
     }
@@ -409,7 +344,9 @@ function Get-MDWPluginCheckReport {
     param(
         [string] $PluginSlug,
         [string] $PluginPath,
-        [object[]] $Sections
+        [object[]] $Sections,
+        [string] $Mode = "Internal",
+        [string[]] $Output = @()
     )
 
     $errors = New-Object System.Collections.Generic.List[string]
@@ -435,6 +372,8 @@ function Get-MDWPluginCheckReport {
         Sections     = @($Sections)
         PluginSlug   = $PluginSlug
         PluginPath   = $PluginPath
+        Mode         = $Mode
+        Output       = @($Output)
     }
 }
 
@@ -467,11 +406,176 @@ function Invoke-MDWPluginCheck {
     return Get-MDWPluginCheckReport -PluginSlug $PluginSlug -PluginPath $pluginPath -Sections $sections
 }
 
-function Invoke-MDWPluginCheckService {
+function Resolve-MDWPluginCheckSourcePath {
     [CmdletBinding()]
     param(
         [string] $PluginSlug
     )
 
+    $basePath = Resolve-MDWPluginPath -PluginSlug $PluginSlug -RequireExisting
+    $nestedPath = Join-Path $basePath $PluginSlug
+    $nestedMainFile = Join-Path $nestedPath "$PluginSlug.php"
+    $baseMainFile = Join-Path $basePath "$PluginSlug.php"
+
+    if (Test-Path -LiteralPath $nestedMainFile -PathType Leaf) {
+        return $nestedPath
+    }
+
+    if (Test-Path -LiteralPath $baseMainFile -PathType Leaf) {
+        return $basePath
+    }
+
+    return $basePath
+}
+function Invoke-MDWWpCli {
+    [CmdletBinding()]
+    param(
+        [string[]] $Arguments,
+        [string] $WorkingDirectory
+    )
+
+    $previousLocation = Get-Location
+
+    try {
+        if (-not [string]::IsNullOrWhiteSpace($WorkingDirectory)) {
+            Set-Location -LiteralPath $WorkingDirectory
+        }
+
+        $output = @(& wp @Arguments 2>&1)
+        $lines = @($output | ForEach-Object { [string]$_ })
+
+        return @{
+            ExitCode = $LASTEXITCODE
+            Output   = $lines
+        }
+    }
+    finally {
+        Set-Location -LiteralPath $previousLocation
+    }
+}
+
+function Copy-MDWPluginToWordPressTestPath {
+    [CmdletBinding()]
+    param(
+        [string] $SourcePath,
+        [string] $TargetPath
+    )
+
+    try {
+        if (Test-Path -LiteralPath $TargetPath -PathType Container) {
+            Get-ChildItem -LiteralPath $TargetPath -Force -Recurse -ErrorAction SilentlyContinue | ForEach-Object {
+                try {
+                    $_.Attributes = [System.IO.FileAttributes]::Normal
+                }
+                catch {
+                }
+            }
+
+            Remove-Item -LiteralPath $TargetPath -Recurse -Force -ErrorAction Stop
+        }
+
+        New-Item -ItemType Directory -Path $TargetPath -Force -ErrorAction Stop | Out-Null
+
+        Get-ChildItem -LiteralPath $SourcePath -Force -ErrorAction Stop | ForEach-Object {
+            Copy-Item -LiteralPath $_.FullName -Destination $TargetPath -Recurse -Force -ErrorAction Stop
+        }
+
+        return @{
+            Passed = $true
+            Message = "Plugin copied to test WordPress"
+        }
+    }
+    catch {
+        return @{
+            Passed = $false
+            Message = "Plugin could not be copied to test WordPress. $($_.Exception.Message)"
+        }
+    }
+}
+
+function Invoke-MDWWpCliPluginCheck {
+    [CmdletBinding()]
+    param(
+        [string] $PluginSlug,
+        [string] $WordPressPath
+    )
+
+    $items = New-Object System.Collections.Generic.List[object]
+    $output = New-Object System.Collections.Generic.List[string]
+
+    if (-not (Get-Command wp -ErrorAction SilentlyContinue)) {
+        $items.Add((New-MDWPluginCheckItem -Name "WP-CLI" -Status "FAIL" -Message "WP-CLI is not installed or not available in PATH."))
+        return Get-MDWPluginCheckReport -PluginSlug $PluginSlug -PluginPath $null -Sections @(New-MDWPluginCheckSection -Name "WP-CLI" -Items @($items.ToArray())) -Mode "WP-CLI" -Output @()
+    }
+
+    $items.Add((New-MDWPluginCheckItem -Name "WP-CLI" -Status "OK" -Message "WP-CLI is available"))
+
+    if ([string]::IsNullOrWhiteSpace($WordPressPath) -or -not (Test-Path -LiteralPath $WordPressPath -PathType Container)) {
+        $items.Add((New-MDWPluginCheckItem -Name "WordPress path" -Status "FAIL" -Message "WordPress test path not found: $WordPressPath"))
+        return Get-MDWPluginCheckReport -PluginSlug $PluginSlug -PluginPath $null -Sections @(New-MDWPluginCheckSection -Name "WordPress" -Items @($items.ToArray())) -Mode "WP-CLI" -Output @()
+    }
+
+    $sourcePath = Resolve-MDWPluginCheckSourcePath -PluginSlug $PluginSlug
+    $pluginsPath = Join-Path (Join-Path (Join-Path $WordPressPath "wp-content") "plugins") ""
+    $targetPath = Join-Path $pluginsPath $PluginSlug
+
+    if (-not (Test-Path -LiteralPath $pluginsPath -PathType Container)) {
+        New-Item -ItemType Directory -Path $pluginsPath -Force | Out-Null
+    }
+
+    $copyResult = Copy-MDWPluginToWordPressTestPath -SourcePath $sourcePath -TargetPath $targetPath
+
+    if (-not $copyResult.Passed) {
+        $items.Add((New-MDWPluginCheckItem -Name "Deploy" -Status "FAIL" -Message $copyResult.Message))
+        return Get-MDWPluginCheckReport -PluginSlug $PluginSlug -PluginPath $sourcePath -Sections @(New-MDWPluginCheckSection -Name "WP-CLI" -Items @($items.ToArray())) -Mode "WP-CLI" -Output @()
+    }
+
+    $items.Add((New-MDWPluginCheckItem -Name "Deploy" -Status "OK" -Message $copyResult.Message))
+
+    $helpResult = Invoke-MDWWpCli -Arguments @("plugin", "check", "--help") -WorkingDirectory $WordPressPath
+
+    if ($helpResult.ExitCode -ne 0) {
+        $items.Add((New-MDWPluginCheckItem -Name "Plugin Check" -Status "FAIL" -Message "WordPress Plugin Check command is not available. Run: wp plugin install plugin-check --activate"))
+        foreach ($line in $helpResult.Output) { $output.Add($line) }
+        return Get-MDWPluginCheckReport -PluginSlug $PluginSlug -PluginPath $sourcePath -Sections @(New-MDWPluginCheckSection -Name "WP-CLI" -Items @($items.ToArray())) -Mode "WP-CLI" -Output @($output.ToArray())
+    }
+
+    $checkResult = Invoke-MDWWpCli -Arguments @("plugin", "check", $PluginSlug, "--path=$WordPressPath") -WorkingDirectory $WordPressPath
+
+    foreach ($line in $checkResult.Output) {
+        $output.Add($line)
+    }
+
+    if ($checkResult.ExitCode -ne 0 -or (($checkResult.Output -join "`n") -match '(?i)\b(error|fatal)\b')) {
+        $items.Add((New-MDWPluginCheckItem -Name "Plugin Check" -Status "FAIL" -Message "wp plugin check reported errors."))
+    }
+    else {
+        $items.Add((New-MDWPluginCheckItem -Name "Plugin Check" -Status "OK" -Message "wp plugin check completed."))
+    }
+
+    if (($checkResult.Output -join "`n") -match '(?i)warning') {
+        $items.Add((New-MDWPluginCheckItem -Name "Warnings" -Status "WARN" -Message "wp plugin check reported warnings."))
+    }
+
+    if (($checkResult.Output -join "`n") -match '\.github') {
+        $items.Add((New-MDWPluginCheckItem -Name "Production files" -Status "WARN" -Message ".github warnings should be handled by build exclude rules."))
+    }
+
+    return Get-MDWPluginCheckReport -PluginSlug $PluginSlug -PluginPath $sourcePath -Sections @(New-MDWPluginCheckSection -Name "WP-CLI" -Items @($items.ToArray())) -Mode "WP-CLI" -Output @($output.ToArray())
+}
+
+function Invoke-MDWPluginCheckService {
+    [CmdletBinding()]
+    param(
+        [string] $PluginSlug,
+        [string] $WordPressPath
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace($WordPressPath)) {
+        return Invoke-MDWWpCliPluginCheck -PluginSlug $PluginSlug -WordPressPath $WordPressPath
+    }
+
     return Invoke-MDWPluginCheck -PluginSlug $PluginSlug
 }
+
+

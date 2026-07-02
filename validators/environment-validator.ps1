@@ -1,4 +1,4 @@
-<#
+﻿<#
 MDW Environment Validator
 PowerShell 5.1 / 7 compatible
 #>
@@ -12,6 +12,26 @@ function Test-MDWEnvironmentCommand {
     )
 
     return $null -ne (Get-Command $CommandName -ErrorAction SilentlyContinue)
+}
+
+function Get-MDWEnvironmentCommandOutput {
+    [CmdletBinding()]
+    param(
+        [string] $CommandName,
+        [string[]] $Arguments
+    )
+
+    if (-not (Test-MDWEnvironmentCommand -CommandName $CommandName)) {
+        return $null
+    }
+
+    try {
+        $output = @(& $CommandName @Arguments 2>$null)
+        return (($output | ForEach-Object { [string]$_ }) -join " ").Trim()
+    }
+    catch {
+        return $null
+    }
 }
 
 function New-MDWEnvironmentCheckResult {
@@ -65,17 +85,20 @@ function Invoke-MDWEnvironmentValidator {
     $checks = New-Object System.Collections.Generic.List[object]
 
     $commandChecks = @(
-        @{ Name = "Git"; Command = "git"; Message = "git command is available."; Missing = "Git is not installed or not available in PATH." }
-        @{ Name = "PHP"; Command = "php"; Message = "php command is available."; Missing = "PHP was not found in PATH." }
-        @{ Name = "Composer"; Command = "composer"; Message = "composer command is available."; Missing = "Composer was not found in PATH." }
-        @{ Name = "SVN"; Command = "svn"; Message = "svn command is available."; Missing = "SVN was not found in PATH." }
+        @{ Name = "Git"; Command = "git"; VersionArgs = @("--version"); Missing = "Git is not installed or not available in PATH." }
+        @{ Name = "PHP"; Command = "php"; VersionArgs = @("-r", "echo PHP_VERSION;"); Missing = "PHP was not found in PATH." }
+        @{ Name = "WP-CLI"; Command = "wp"; VersionArgs = @("--version"); Missing = "WP-CLI was not found in PATH." }
+        @{ Name = "Composer"; Command = "composer"; VersionArgs = @("--version"); Missing = "Composer was not found in PATH." }
+        @{ Name = "SVN"; Command = "svn"; VersionArgs = @("--version", "--quiet"); Missing = "SVN was not found in PATH." }
     )
 
     foreach ($commandCheck in $commandChecks) {
         $commandExists = Test-MDWEnvironmentCommand -CommandName $commandCheck.Command
 
         if ($commandExists) {
-            $checks.Add((New-MDWEnvironmentCheckResult -Name $commandCheck.Name -Passed $true -Message $commandCheck.Message -Severity "Info"))
+            $version = Get-MDWEnvironmentCommandOutput -CommandName $commandCheck.Command -Arguments $commandCheck.VersionArgs
+            $message = if ([string]::IsNullOrWhiteSpace($version)) { "$($commandCheck.Name) command is available." } else { $version }
+            $checks.Add((New-MDWEnvironmentCheckResult -Name $commandCheck.Name -Passed $true -Message $message -Severity "Info"))
         }
         else {
             $warnings.Add($commandCheck.Missing)
@@ -94,12 +117,19 @@ function Invoke-MDWEnvironmentValidator {
         $checks.Add((New-MDWEnvironmentCheckResult -Name "WordPress Plugin Check CLI" -Passed $false -Message $pluginCheckMessage -Severity "Warning"))
     }
 
+    $workspacePath = Get-MDWWorkspacePath
     $pluginsPath = Get-MDWPluginsPath
+    $buildPath = Get-MDWBuildPath
+    $releasePath = Get-MDWReleasePath
     $backupPath = Get-MDWBackupPath
 
     $pathChecks = @(
+        @{ Name = "Workspace root"; Path = $workspacePath; Missing = "Workspace root not found: $workspacePath" }
         @{ Name = "Plugins directory"; Path = $pluginsPath; Missing = "Plugins directory not found: $pluginsPath" }
+        @{ Name = "Build directory"; Path = $buildPath; Missing = "Build directory not found: $buildPath" }
+        @{ Name = "Releases directory"; Path = $releasePath; Missing = "Releases directory not found: $releasePath" }
         @{ Name = "Backup directory"; Path = $backupPath; Missing = "Backup directory not found: $backupPath" }
+        @{ Name = "Laragon directory"; Path = "C:\laragon"; Missing = "Laragon directory not found: C:\laragon" }
     )
 
     foreach ($pathCheck in $pathChecks) {

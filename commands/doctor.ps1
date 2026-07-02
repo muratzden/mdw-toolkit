@@ -1,4 +1,4 @@
-<#
+﻿<#
 MDW Doctor Command
 PowerShell 5.1 / 7 compatible
 #>
@@ -28,23 +28,27 @@ function Get-MDWDoctorCategory {
     switch -Wildcard ($name) {
         "Git Installed" { return "Skip" }
 
-        "Git" { return "Tools" }
-        "PHP" { return "Tools" }
-        "Composer" { return "Tools" }
-        "SVN" { return "Tools" }
-        "WordPress Plugin Check CLI" { return "Tools" }
+        "Git" { return "Core" }
+        "PHP" { return "Environment" }
+        "WP-CLI" { return "Environment" }
+        "Composer" { return "Environment" }
+        "SVN" { return "Environment" }
+        "WordPress Plugin Check CLI" { return "Plugin Check" }
 
         "mdw.json" { return "Workspace" }
-        "Backup directory" { return "Workspace" }
-        "MDW Internal Plugin Check Service" { return "Workspace" }
-
+        "Workspace root" { return "Workspace" }
         "Plugins directory" {
-    if ($message -match "C:\\Workspace\\Plugins|exists") {
-        return "Workspace"
-    }
+            if ($message -notmatch "C:\\Workspace\\Plugins") {
+                return "LocalWP"
+            }
 
-    return "Skip"
-}
+            return "Workspace"
+        }
+        "Build directory" { return "Workspace" }
+        "Releases directory" { return "Workspace" }
+        "Backup directory" { return "Workspace" }
+        "Laragon directory" { return "Workspace" }
+        "MDW Internal Plugin Check Service" { return "Plugin Check" }
 
         "LocalWP root" { return "LocalWP" }
         "Default site" { return "LocalWP" }
@@ -63,26 +67,29 @@ function Get-MDWDoctorMessage {
 
     $name = [string]$Check.Name
     $message = [string]$Check.Message
-    $category = Get-MDWDoctorCategory -Check $Check
 
     switch -Wildcard ($name) {
         "Git" { return "Git" }
-        "PHP" { return "PHP" }
+        "PHP" { return ("PHP {0}" -f $message) }
+        "WP-CLI" { return $message }
         "Composer" { return "Composer" }
         "SVN" { return "SVN" }
         "WordPress Plugin Check CLI" { return "WP Plugin Check CLI" }
 
         "mdw.json" { return "mdw.json" }
-        "Backup directory" { return "Backup directory" }
-        "MDW Internal Plugin Check Service" { return "Internal plugin check" }
-
+        "Workspace root" { return "Workspace root" }
         "Plugins directory" {
-            if ($category -eq "LocalWP") {
+            if ($message -notmatch "C:\\Workspace\\Plugins") {
                 return "LocalWP plugins directory"
             }
 
             return "Plugins directory"
         }
+        "Build directory" { return "Build directory" }
+        "Releases directory" { return "Releases directory" }
+        "Backup directory" { return "Backup directory" }
+        "Laragon directory" { return "Laragon directory" }
+        "MDW Internal Plugin Check Service" { return "Internal plugin check" }
 
         "LocalWP root" { return "LocalWP root" }
         "Default site" { return "Default LocalWP site" }
@@ -92,9 +99,7 @@ function Get-MDWDoctorMessage {
         "Branch" { return "Branch" }
         "Working Tree" { return "Working tree" }
 
-        default {
-            return $name
-        }
+        default { return $name }
     }
 }
 
@@ -125,27 +130,23 @@ function Invoke-MDWDoctor {
 
     $result = Invoke-MDWDoctorService
 
-    $toolsChecks = @()
+    $coreChecks = @()
+    $environmentChecks = @()
     $workspaceChecks = @()
     $localChecks = @()
     $gitChecks = @()
+    $pluginCheckChecks = @()
 
     foreach ($check in $result.Checks) {
         $category = Get-MDWDoctorCategory -Check $check
 
         switch ($category) {
-            "Tools" {
-                $toolsChecks += $check
-            }
-            "Workspace" {
-                $workspaceChecks += $check
-            }
-            "LocalWP" {
-                $localChecks += $check
-            }
-            "Git" {
-                $gitChecks += $check
-            }
+            "Core" { $coreChecks += $check }
+            "Environment" { $environmentChecks += $check }
+            "Workspace" { $workspaceChecks += $check }
+            "LocalWP" { $localChecks += $check }
+            "Git" { $gitChecks += $check }
+            "Plugin Check" { $pluginCheckChecks += $check }
         }
     }
 
@@ -153,32 +154,12 @@ function Invoke-MDWDoctor {
         -Title "MDW Toolkit" `
         -Subtitle "Development Environment"
 
-    Write-MDWDoctorGroup -Title "Tools" -Checks $toolsChecks
-	$workspaceChecks = $workspaceChecks | Sort-Object @{
-    Expression = {
-        switch ($_.Name) {
-            "mdw.json" { 1 }
-            "Plugins directory" { 2 }
-            "Backup directory" { 3 }
-            "MDW Internal Plugin Check Service" { 4 }
-            default { 99 }
-        }
-    }
-}
+    Write-MDWDoctorGroup -Title "Core" -Checks $coreChecks
+    Write-MDWDoctorGroup -Title "Environment" -Checks $environmentChecks
     Write-MDWDoctorGroup -Title "Workspace" -Checks $workspaceChecks
-    Write-MDWDoctorGroup -Title "LocalWP" -Checks $localChecks
-	$gitChecks = $gitChecks | Sort-Object @{
-    Expression = {
-        switch ($_.Name) {
-            "Repository" { 1 }
-            "Remote" { 2 }
-            "Branch" { 3 }
-            "Working Tree" { 4 }
-            default { 99 }
-        }
-    }
-}
     Write-MDWDoctorGroup -Title "Git" -Checks $gitChecks
+    Write-MDWDoctorGroup -Title "LocalWP" -Checks $localChecks
+    Write-MDWDoctorGroup -Title "Plugin Check" -Checks $pluginCheckChecks
 
     if ($result.ErrorCount -gt 0) {
         Write-MDWResult `
@@ -200,3 +181,6 @@ function Invoke-MDWDoctor {
         -Status "OK" `
         -Message "Environment ready."
 }
+
+
+

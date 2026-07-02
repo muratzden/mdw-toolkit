@@ -37,7 +37,21 @@ function Test-MDWBuildExcludedName {
         "Mdw.Core.ps1"
     )
 
-    return $Name -in $excludedNames
+    $excludedPatterns = @(
+        "*.zip"
+    )
+
+    if ($Name -in $excludedNames) {
+        return $true
+    }
+
+    foreach ($pattern in $excludedPatterns) {
+        if ($Name -like $pattern) {
+            return $true
+        }
+    }
+
+    return $false
 }
 
 function Copy-MDWBuildProductionContent {
