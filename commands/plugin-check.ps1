@@ -5,7 +5,7 @@ PowerShell 5.1 / 7 compatible
 
 Set-StrictMode -Version 2.0
 
-function Invoke-MDWPluginCheck {
+function Invoke-MDWPluginCheckCommand {
     [CmdletBinding()]
     param(
         [string[]] $Arguments
@@ -22,45 +22,49 @@ function Invoke-MDWPluginCheck {
         $pluginSlug = Split-Path $currentPath -Leaf
     }
 
+    Write-MDWHeader -Title "MDW Toolkit" -Subtitle "Plugin Check"
+
     if (-not $pluginSlug) {
-        throw "Plugin slug could not be resolved."
+        Write-MDWResult -Status "FAIL" -Message "Plugin slug could not be resolved."
+        return
     }
 
-    Write-Host "[MDW] Plugin Check started: $pluginSlug" -ForegroundColor Cyan
+    $result = Invoke-MDWPluginCheck -PluginSlug $pluginSlug
 
-    $result = Invoke-MDWPluginCheckService -PluginSlug $pluginSlug
+    Write-MDWSection -Title "Plugin"
+    Write-MDWInfoCard -Label "Plugin" -Value $pluginSlug
 
-    Write-Host "[MDW] Plugin path: $($result.PluginPath)"
+    foreach ($section in $result.Sections) {
+        Write-MDWSection -Title $section.Name
 
-    if ($result.Output.Count -gt 0) {
-        Write-Host ""
-        Write-Host "[MDW] Plugin Check output:" -ForegroundColor Yellow
-
-        foreach ($line in $result.Output) {
-            Write-Host "  $line"
+        foreach ($item in $section.Items) {
+            Write-MDWStatus `
+                -Status $item.Status `
+                -Message $item.Message
         }
+    }
+
+    Write-MDWSection -Title "Summary"
+    Write-MDWInfoCard -Label "Warnings" -Value $result.WarningCount
+    Write-MDWInfoCard -Label "Errors" -Value $result.ErrorCount
+
+    if ($result.ErrorCount -gt 0) {
+        Write-MDWResult `
+            -Status "FAIL" `
+            -Message ("Plugin Check failed with {0} errors." -f $result.ErrorCount)
+
+        return
     }
 
     if ($result.WarningCount -gt 0) {
-        Write-Host ""
-        Write-Host "[MDW] Warnings:" -ForegroundColor Yellow
+        Write-MDWResult `
+            -Status "WARN" `
+            -Message ("Plugin Check passed with {0} warnings." -f $result.WarningCount)
 
-        foreach ($warning in $result.Warnings) {
-            Write-Host "  - $warning" -ForegroundColor Yellow
-        }
+        return
     }
 
-    if ($result.ErrorCount -gt 0) {
-        Write-Host ""
-        Write-Host "[MDW] Errors:" -ForegroundColor Red
-
-        foreach ($errorItem in $result.Errors) {
-            Write-Host "  - $errorItem" -ForegroundColor Red
-        }
-
-        throw "Plugin Check failed with $($result.ErrorCount) error(s)."
-    }
-
-    Write-Host ""
-    Write-Host "[MDW] Plugin Check completed: $pluginSlug" -ForegroundColor Green
+    Write-MDWResult `
+        -Status "OK" `
+        -Message "Plugin Check passed."
 }

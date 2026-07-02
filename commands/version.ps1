@@ -12,48 +12,28 @@ function Invoke-MDWVersion {
     )
 
     $toolkitRoot = Get-MDWToolkitPath
-    $workspaceRoot = Get-MDWWorkspacePath
-    $config = Get-MDWConfig -ToolkitRoot $toolkitRoot
-    $metadata = Get-MDWToolkitMetadata -Config $config
-    $powerShellVersion = $PSVersionTable.PSVersion.ToString()
+    $config      = Get-MDWConfig -ToolkitRoot $toolkitRoot
+    $metadata    = Get-MDWToolkitMetadata -Config $config
 
-    $logoPath = Join-Path $toolkitRoot 'assets\logo-terminal.txt'
+    Write-MDWHeader `
+        -Title $metadata.Name `
+        -Subtitle $metadata.Slogan
 
-    Write-Host ''
+    Write-MDWSection -Title "Version"
 
-    if (Test-Path $logoPath) {
-        Get-Content $logoPath | ForEach-Object {
-            Write-Host $_ -ForegroundColor Cyan
-        }
+    Write-MDWInfoCard `
+        -Label "Toolkit" `
+        -Value $metadata.Name
 
-        Write-Host ''
-    }
+    Write-MDWInfoCard `
+        -Label "Version" `
+        -Value $metadata.Version
 
-    Write-Host $metadata.Slogan -ForegroundColor Blue
+    Write-MDWInfoCard `
+        -Label "Channel" `
+        -Value $metadata.Channel
 
-    Write-Host ''
-    Write-Host ('-' * 60) -ForegroundColor DarkGray
-    Write-Host ''
-
-    Write-Host "Version      : " -NoNewline -ForegroundColor DarkGray
-    Write-Host $metadata.Version -ForegroundColor Green
-
-    Write-Host "Channel      : " -NoNewline -ForegroundColor DarkGray
-    Write-Host $metadata.Channel -ForegroundColor Yellow
-
-    Write-Host "PowerShell   : " -NoNewline -ForegroundColor DarkGray
-    Write-Host $powerShellVersion -ForegroundColor White
-
-    Write-Host "Workspace    : " -NoNewline -ForegroundColor DarkGray
-    Write-Host $workspaceRoot -ForegroundColor Cyan
-
-    Write-Host "Toolkit      : " -NoNewline -ForegroundColor DarkGray
-    Write-Host $toolkitRoot -ForegroundColor Cyan
-
-    Write-Host "GitHub       : " -NoNewline -ForegroundColor DarkGray
-    Write-Host $metadata.GitHubUrl -ForegroundColor Blue
-
-    Write-Host ''
-    Write-Host ('-' * 60) -ForegroundColor DarkGray
-    Write-Host ''
+    Write-MDWResult `
+        -Status "OK" `
+        -Message "MDW Toolkit is ready."
 }

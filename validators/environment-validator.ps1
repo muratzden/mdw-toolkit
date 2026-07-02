@@ -65,7 +65,7 @@ function Invoke-MDWEnvironmentValidator {
     $checks = New-Object System.Collections.Generic.List[object]
 
     $commandChecks = @(
-        @{ Name = "Git"; Command = "git"; Message = "git command is available."; Missing = "Git was not found in PATH." }
+        @{ Name = "Git"; Command = "git"; Message = "git command is available."; Missing = "Git is not installed or not available in PATH." }
         @{ Name = "PHP"; Command = "php"; Message = "php command is available."; Missing = "PHP was not found in PATH." }
         @{ Name = "Composer"; Command = "composer"; Message = "composer command is available."; Missing = "Composer was not found in PATH." }
         @{ Name = "SVN"; Command = "svn"; Message = "svn command is available."; Missing = "SVN was not found in PATH." }

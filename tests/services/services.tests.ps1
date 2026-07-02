@@ -5,7 +5,16 @@ $services = @(
     @{ Name = "Check"; EntryPoint = "Invoke-MDWCheckService" }
     @{ Name = "Release"; EntryPoint = "Invoke-MDWRelease" }
     @{ Name = "Doctor"; EntryPoint = "Invoke-MDWDoctorService" }
+    @{ Name = "Git"; EntryPoint = "Get-MDWGitStatus" }
+    @{ Name = "LocalWP Service"; EntryPoint = "Get-MDWLocalWPReport" }
+    @{ Name = "LocalWP Config"; EntryPoint = "Get-MDWLocalWPConfig" }
+    @{ Name = "LocalWP Path Resolution"; EntryPoint = "Get-MDWLocalWPPluginsPath" }
+    @{ Name = "LocalWP Availability Check"; EntryPoint = "Test-MDWLocalWPAvailable" }
     @{ Name = "Plugin Check"; EntryPoint = "Invoke-MDWPluginCheckService" }
+    @{ Name = "Plugin Structure"; EntryPoint = "Test-MDWPluginStructure" }
+    @{ Name = "Plugin Headers"; EntryPoint = "Test-MDWPluginHeaders" }
+    @{ Name = "Readme Validation"; EntryPoint = "Test-MDWPluginReadme" }
+    @{ Name = "Forbidden Files"; EntryPoint = "Test-MDWPluginForbiddenFiles" }
     @{ Name = "Init"; EntryPoint = "Invoke-MDWInitService" }
     @{ Name = "Workspace"; EntryPoint = "Invoke-MDWWorkspaceService" }
 )

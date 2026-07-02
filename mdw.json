@@ -1,9 +1,9 @@
 {
   "name": "mdw-toolkit",
-  "version": "0.1.3-alpha",
+  "version": "0.1.7-alpha",
   "toolkit": {
     "name": "MDW Toolkit",
-    "version": "0.1.3-alpha",
+    "version": "0.1.7-alpha",
     "channel": "Alpha",
     "slogan": "Build | Validate | Test | Release WordPress Plugins",
     "githubUrl": "https://github.com/muratzden/mdw-toolkit"
@@ -17,6 +17,12 @@
     "backupPath": "D:\\Workspace Backup",
     "releasePath": "C:\\Workspace\\Releases",
     "releasesPath": "C:\\Workspace\\Releases"
+  },
+  "localwp": {
+    "enabled": true,
+    "rootPath": "C:\\Users\\murat\\Local Sites",
+    "defaultSite": "template-test",
+    "pluginsRelativePath": "app\\public\\wp-content\\plugins"
   },
   "git": {
     "defaultBranch": "main"

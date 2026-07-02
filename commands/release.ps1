@@ -1,4 +1,4 @@
-<#
+﻿<#
 MDW Release Command
 PowerShell 5.1 / 7 compatible
 #>
@@ -22,29 +22,65 @@ function Invoke-MDWRelease {
         $pluginSlug = Split-Path $currentPath -Leaf
     }
 
-    if (-not $pluginSlug) {
-        throw "Plugin slug could not be resolved."
+    Write-MDWHeader -Title "MDW Toolkit" -Subtitle "Release Pipeline"
+
+    Write-MDWSection -Title "Plugin"
+    Write-MDWInfoCard -Label "Plugin" -Value $pluginSlug
+
+    if ([string]::IsNullOrWhiteSpace($pluginSlug)) {
+        Write-MDWResult -Status "FAIL" -Message "Plugin slug could not be resolved."
+        return
     }
 
-    Write-MDWHeader -Title "Release Pipeline" -Subtitle $pluginSlug
-    Write-MDWPipeline -Steps @("Backup", "Clean", "Build", "Check", "ZIP", "Release Complete")
+    $pluginPath = Get-MDWPluginPath -PluginSlug $pluginSlug
+    $releasePath = Get-MDWReleasePluginPath -PluginSlug $pluginSlug
+    $zipPath = Join-Path $releasePath "$pluginSlug.zip"
 
-    Write-MDWSection -Title "Running"
-    Write-MDWStep -Name "Backup" -Status "INFO"
-    Invoke-MDWBackup -Arguments @($pluginSlug)
+    if (-not (Test-Path -LiteralPath $pluginPath -PathType Container)) {
+        Write-MDWResult -Status "FAIL" -Message "Plugin not found."
+        return
+    }
 
-    Write-MDWStep -Name "Clean" -Status "INFO"
-    Invoke-MDWClean -Arguments @($pluginSlug)
+    Write-MDWSection -Title "Pipeline"
+    Write-MDWStatus -Status "INFO" -Message "Backup"
+    Write-MDWStatus -Status "INFO" -Message "Clean"
+    Write-MDWStatus -Status "INFO" -Message "Build"
+    Write-MDWStatus -Status "INFO" -Message "Check"
+    Write-MDWStatus -Status "INFO" -Message "ZIP"
+    Write-MDWStatus -Status "INFO" -Message "Release Complete"
 
-    Write-MDWStep -Name "Build" -Status "INFO"
-    Invoke-MDWBuild -Arguments @($pluginSlug)
+    try {
+        Write-MDWBlank
+        Write-MDWStatus -Status "INFO" -Message "Run backup"
+        Invoke-MDWBackup -Arguments @($pluginSlug)
 
-    Write-MDWStep -Name "Check" -Status "INFO"
-    Invoke-MDWCheck -Arguments @($pluginSlug)
+        Write-MDWBlank
+        Write-MDWStatus -Status "INFO" -Message "Run clean"
+        Invoke-MDWClean -Arguments @($pluginSlug)
 
-    Write-MDWStep -Name "ZIP" -Status "INFO"
-    Invoke-MDWZip -Arguments @($pluginSlug)
+        Write-MDWBlank
+        Write-MDWStatus -Status "INFO" -Message "Run build"
+        Invoke-MDWBuild -Arguments @($pluginSlug)
 
-    Write-MDWStatusLine -Status "OK" -Message "Release complete."
-    Write-Host ""
+        Write-MDWBlank
+        Write-MDWStatus -Status "INFO" -Message "Run check"
+        Invoke-MDWCheck -Arguments @($pluginSlug)
+
+        Write-MDWBlank
+        Write-MDWStatus -Status "INFO" -Message "Run ZIP"
+        Invoke-MDWZip -Arguments @($pluginSlug)
+
+        if (-not (Test-Path -LiteralPath $zipPath -PathType Leaf)) {
+            Write-MDWResult -Status "FAIL" -Message "Release package could not be created."
+            return
+        }
+
+        Write-MDWSection -Title "Output"
+        Write-MDWInfoCard -Label "Release ZIP" -Value $zipPath
+
+        Write-MDWResult -Status "OK" -Message "Release completed successfully."
+    }
+    catch {
+        Write-MDWResult -Status "FAIL" -Message $_.Exception.Message
+    }
 }

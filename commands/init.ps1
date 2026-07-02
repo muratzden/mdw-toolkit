@@ -1,4 +1,4 @@
-<#
+﻿<#
 MDW Init Command
 PowerShell 5.1 / 7 compatible
 #>
@@ -38,38 +38,47 @@ function Invoke-MDWInit {
     $sourcePath = $Arguments[1]
     $pluginSlug = $Arguments[2]
 
-    Write-Host "[MDW] Init started: $pluginSlug" -ForegroundColor Cyan
+    Write-MDWHeader -Title "MDW Toolkit" -Subtitle "Init Plugin"
+
+    Write-MDWSection -Title "Plugin"
+    Write-MDWInfoCard -Label "Plugin" -Value $pluginSlug
+
+    Write-MDWSection -Title "Steps"
+    Write-MDWStatus -Status "INFO" -Message "Import plugin files"
 
     $result = Invoke-MDWInitService -SourcePath $sourcePath -PluginSlug $pluginSlug
 
-    Write-Host "[MDW] Source: $($result.SourcePath)"
-    Write-Host "[MDW] Target: $($result.TargetPath)"
+    Write-MDWStatus -Status "OK" -Message "Plugin files imported"
+
+    Write-MDWSection -Title "Paths"
+    Write-MDWInfoCard -Label "Source" -Value $result.SourcePath
+    Write-MDWInfoCard -Label "Target" -Value $result.TargetPath
 
     if ($result.MainPluginFile) {
-        Write-Host "[MDW] Main plugin file: $($result.MainPluginFile)"
+        Write-MDWInfoCard -Label "Main File" -Value $result.MainPluginFile
     }
 
     if ($result.WarningCount -gt 0) {
-        Write-Host ""
-        Write-Host "[MDW] Warnings:" -ForegroundColor Yellow
+        Write-MDWSection -Title "Warnings"
 
         foreach ($warning in $result.Warnings) {
-            Write-Host "  - $warning" -ForegroundColor Yellow
+            Write-MDWStatus -Status "WARN" -Message $warning
         }
     }
 
     if ($result.ErrorCount -gt 0) {
-        Write-Host ""
-        Write-Host "[MDW] Errors:" -ForegroundColor Red
+        Write-MDWSection -Title "Errors"
 
         foreach ($errorItem in $result.Errors) {
-            Write-Host "  - $errorItem" -ForegroundColor Red
+            Write-MDWStatus -Status "FAIL" -Message $errorItem
         }
 
+        Write-MDWResult -Status "FAIL" -Message ("Init failed with {0} error(s)." -f $result.ErrorCount)
         throw "Init failed with $($result.ErrorCount) error(s)."
     }
 
-    Write-Host ""
-    Write-Host "[MDW] Init completed: $pluginSlug" -ForegroundColor Green
-    Write-Host "[MDW] Next: mdw check $pluginSlug"
+    Write-MDWSection -Title "Next"
+    Write-MDWInfoCard -Label "Command" -Value ("mdw check {0}" -f $pluginSlug)
+
+    Write-MDWResult -Status "OK" -Message "Init completed."
 }

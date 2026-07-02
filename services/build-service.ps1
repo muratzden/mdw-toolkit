@@ -1,4 +1,4 @@
-<#
+﻿<#
 MDW Build Service
 PowerShell 5.1 / 7 compatible
 #>
@@ -32,7 +32,9 @@ function Test-MDWBuildExcludedName {
         "PROJECT.md",
         "CHANGELOG.md",
         "CONTRIBUTING.md",
-        "ROADMAP.md"
+        "ROADMAP.md",
+        "new-command.ps1",
+        "Mdw.Core.ps1"
     )
 
     return $Name -in $excludedNames

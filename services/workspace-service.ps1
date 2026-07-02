@@ -114,6 +114,7 @@ function Invoke-MDWWorkspaceService {
     $result.Workspace.ReleasesPath = $releasesRoot
     $result.Workspace.BackupPath = $backupRoot
     $result.Workspace.ConfigPath = $configPath
+    $result.LocalWP = Get-MDWLocalWPReport
 
     return $result
 }

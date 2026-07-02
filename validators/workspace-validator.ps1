@@ -50,61 +50,7 @@ function Get-MDWWorkspaceGitInfo {
         [string] $Path
     )
 
-    $result = @{
-        Available = $false
-        Branch    = $null
-        Status    = "Not a git repository"
-        Clean     = $false
-    }
-
-    if ([string]::IsNullOrWhiteSpace($Path) -or -not (Test-Path -LiteralPath $Path -PathType Container)) {
-        return $result
-    }
-
-    $gitMetadataPath = Join-Path $Path ".git"
-
-    if (-not (Test-Path -LiteralPath $gitMetadataPath)) {
-        return $result
-    }
-
-    if ($null -eq (Get-Command git -ErrorAction SilentlyContinue)) {
-        $result.Status = "Git is not available"
-        return $result
-    }
-
-    $previousErrorActionPreference = $ErrorActionPreference
-    $ErrorActionPreference = "SilentlyContinue"
-
-    try {
-        $safeDirectoryArgument = "safe.directory=$Path"
-        $insideWorkTree = & git -c $safeDirectoryArgument -C $Path rev-parse --is-inside-work-tree 2>$null
-
-        if ($LASTEXITCODE -ne 0 -or $insideWorkTree -ne "true") {
-            return $result
-        }
-
-        $branch = & git -c $safeDirectoryArgument -C $Path branch --show-current 2>$null
-        $status = & git -c $safeDirectoryArgument -C $Path status --porcelain 2>$null
-
-        $result.Available = $true
-        $result.Branch = [string] $branch
-        $result.Clean = ($null -eq $status -or $status.Count -eq 0)
-
-        if ($result.Clean) {
-            $result.Status = "Working Tree Clean"
-        }
-        else {
-            $result.Status = "Working Tree Has Changes"
-        }
-    }
-    catch {
-        $result.Status = "Git status unavailable"
-    }
-    finally {
-        $ErrorActionPreference = $previousErrorActionPreference
-    }
-
-    return $result
+    return Get-MDWGitStatus -RepositoryPath $Path
 }
 
 function Get-MDWWorkspacePluginVersion {
@@ -165,7 +111,7 @@ function Invoke-MDWWorkspaceValidator {
     $composer = Get-MDWWorkspaceCommandInfo -CommandName "composer" -VersionArguments @("--version")
     $svn = Get-MDWWorkspaceCommandInfo -CommandName "svn" -VersionArguments @("--version", "--quiet")
     $pluginCheck = Get-MDWWorkspacePluginCheckCliInfo
-    $git = Get-MDWWorkspaceGitInfo -Path $PluginPath
+    $git = Get-MDWWorkspaceGitInfo -Path $ToolkitRoot
     $pluginVersion = Get-MDWWorkspacePluginVersion -PluginSlug $PluginSlug -PluginPath $PluginPath
 
     $releasePackage = $null

@@ -1,0 +1,16 @@
+```yaml
+blank_issues_enabled: false
+
+contact_links:
+  - name: Documentation
+    url: https://github.com/muratzden/mdw-toolkit/tree/main/docs
+    about: Please read the documentation before opening an issue.
+
+  - name: Security Policy
+    url: https://github.com/muratzden/mdw-toolkit/blob/main/SECURITY.md
+    about: Please report security vulnerabilities using the process described in SECURITY.md.
+
+  - name: Discussions
+    url: https://github.com/muratzden/mdw-toolkit/discussions
+    about: Ask questions, share ideas, and discuss the project.
+```

@@ -1,4 +1,4 @@
-<#
+﻿<#
 MDW Backup Command
 PowerShell 5.1 / 7 compatible
 #>
@@ -36,13 +36,24 @@ function Invoke-MDWBackup {
     $pluginBackupRoot = Get-MDWBackupPluginPath -PluginSlug $pluginSlug
     $backupPath = Join-Path $pluginBackupRoot $timestamp
 
-    Write-Host "[MDW] Backup started: $pluginSlug" -ForegroundColor Cyan
+    Write-MDWHeader -Title "MDW Toolkit" -Subtitle "Backup"
+
+    Write-MDWSection -Title "Plugin"
+    Write-MDWInfoCard -Label "Plugin" -Value $pluginSlug
+
+    Write-MDWSection -Title "Source"
+    Write-MDWInfoCard -Label "Path" -Value $pluginPath
+
+    Write-MDWSection -Title "Steps"
+    Write-MDWStatus -Status "INFO" -Message "Prepare backup directory"
 
     if (-not (Test-Path -LiteralPath $pluginBackupRoot)) {
         New-Item -ItemType Directory -Path $pluginBackupRoot -Force | Out-Null
     }
 
     New-Item -ItemType Directory -Path $backupPath -Force | Out-Null
+
+    Write-MDWStatus -Status "INFO" -Message "Copy plugin files"
 
     Get-ChildItem -LiteralPath $pluginPath -Force | Where-Object {
         $_.Name -notin @(
@@ -57,7 +68,10 @@ function Invoke-MDWBackup {
         Copy-Item -LiteralPath $_.FullName -Destination $backupPath -Recurse -Force
     }
 
-    Write-Host "[MDW] Source: $pluginPath"
-    Write-Host "[MDW] Backup: $backupPath"
-    Write-Host "[MDW] Backup completed: $pluginSlug" -ForegroundColor Green
+    Write-MDWStatus -Status "OK" -Message "Backup created"
+
+    Write-MDWSection -Title "Output"
+    Write-MDWInfoCard -Label "Backup" -Value $backupPath
+
+    Write-MDWResult -Status "OK" -Message "Backup completed."
 }

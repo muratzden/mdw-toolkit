@@ -4,12 +4,14 @@ $commands = @(
     @{ Name = "new"; EntryPoint = "Invoke-MDWNew" }
     @{ Name = "init"; EntryPoint = "Invoke-MDWInit" }
     @{ Name = "info"; EntryPoint = "Invoke-MDWInfo" }
+    @{ Name = "git"; EntryPoint = "Invoke-MDWGitCommand" }
+    @{ Name = "local"; EntryPoint = "Invoke-MDWLocal" }
     @{ Name = "doctor"; EntryPoint = "Invoke-MDWDoctor" }
     @{ Name = "build"; EntryPoint = "Invoke-MDWBuild" }
     @{ Name = "check"; EntryPoint = "Invoke-MDWCheck" }
     @{ Name = "zip"; EntryPoint = "Invoke-MDWZip" }
     @{ Name = "release"; EntryPoint = "Invoke-MDWRelease" }
-    @{ Name = "plugin-check"; EntryPoint = "Invoke-MDWPluginCheck" }
+    @{ Name = "plugin-check"; EntryPoint = "Invoke-MDWPluginCheckCommand" }
     @{ Name = "test"; EntryPoint = "Invoke-MDWTest" }
 )
 

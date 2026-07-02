@@ -23,10 +23,10 @@ function Invoke-MDWTest {
         }
 
         if ($test.Passed) {
-            Write-MDWStatusLine -Status "OK" -Message $test.Name
+            Write-MDWStatus -Status "OK" -Message $test.Name
         }
         else {
-            Write-MDWStatusLine -Status "FAIL" -Message ("{0} - {1}" -f $test.Name, $test.Message)
+            Write-MDWStatus -Status "FAIL" -Message ("{0} - {1}" -f $test.Name, $test.Message)
         }
     }
 
@@ -34,15 +34,27 @@ function Invoke-MDWTest {
         Write-MDWSection -Title "Warnings"
 
         foreach ($warning in $result.Warnings) {
-            Write-MDWStatusLine -Status "WARN" -Message $warning
+            Write-MDWStatus -Status "WARN" -Message $warning
         }
     }
 
-    Write-MDWTestSummary -Result $result
+    Write-MDWSection -Title "Summary"
+    Write-MDWInfoCard -Label "Total" -Value ($result.PassedCount + $result.FailedCount)
+    Write-MDWInfoCard -Label "Passed" -Value $result.PassedCount
+    Write-MDWInfoCard -Label "Failed" -Value $result.FailedCount
+    Write-MDWInfoCard -Label "Warnings" -Value $result.WarningCount
+    Write-MDWInfoCard -Label "Duration" -Value ("{0:N2} sec" -f $result.Duration)
+
+    if ($result.Passed) {
+        Write-MDWResult -Status "OK" -Message "Result: PASS"
+    }
+    else {
+        Write-MDWResult -Status "FAIL" -Message "Result: FAIL"
+    }
 
     if (-not $result.Passed) {
         throw "MDW tests failed with $($result.FailedCount) failure(s)."
     }
 
-    Write-Host ""
+    Write-MDWBlank
 }

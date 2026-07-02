@@ -1,108 +1,123 @@
-# Contributing to MDW Toolkit
+# Contributing
 
-First of all, thank you for considering contributing to MDW Toolkit.
+First of all, thank you for your interest in contributing to MDW.
 
-Our goal is to build a professional, reliable, and maintainable development toolkit for the WordPress ecosystem.
+The goal of this project is to provide a stable, maintainable, and production-ready development toolkit for WordPress plugin development. Every contribution should support that goal.
 
 ---
 
-# Getting Started
+# Before You Start
 
-1. Fork the repository.
-2. Create a feature branch.
-3. Implement your changes.
-4. Test your changes.
-5. Submit a Pull Request.
+Please read the project documentation before making changes.
+
+Important documents include:
+
+* README.md
+* CHANGELOG.md
+* SECURITY.md
+* CODE_OF_CONDUCT.md
+* Documentation in the `docs` directory
 
 ---
 
 # Development Principles
 
-Please follow these principles when contributing:
+Contributions should follow the existing project architecture.
 
-- Keep functions small and focused.
-- Prefer readability over cleverness.
-- Avoid duplicated code.
-- Follow SOLID principles where applicable.
-- Keep the CLI experience consistent.
-- Write production-quality code.
+Please do not introduce unnecessary complexity or duplicate existing functionality.
+
+Core principles include:
+
+* Keep the architecture modular.
+* Reuse existing services whenever possible.
+* Avoid code duplication.
+* Keep functions focused on a single responsibility.
+* Maintain PowerShell 5.1 and PowerShell 7 compatibility.
+* Preserve backward compatibility unless a breaking change is explicitly planned.
 
 ---
 
 # Coding Standards
 
-MDW Toolkit follows:
+Please ensure that your code:
 
-- PowerShell Best Practices
-- WordPress Development Standards
-- Git Best Practices
-- Semantic Versioning
-- Clean Code principles
-
----
-
-# Pull Request Checklist
-
-Before opening a Pull Request, make sure that:
-
-- [ ] Code builds successfully.
-- [ ] Existing functionality is not broken.
-- [ ] New functionality has been tested.
-- [ ] Documentation has been updated.
-- [ ] No unnecessary files are included.
+* follows the existing coding style
+* uses meaningful names
+* includes appropriate comments where necessary
+* avoids dead code
+* avoids legacy helper patterns
+* remains easy to maintain
 
 ---
 
-# Commit Messages
+# Testing
 
-Use clear, descriptive commit messages.
+Before submitting a contribution:
 
-Examples:
+* Run the complete test suite.
+* Verify that all existing commands continue to work.
+* Ensure no regressions have been introduced.
+
+Expected result:
 
 ```text
-feat: add workspace validator
-
-fix: improve release pipeline
-
-docs: update README
-
-refactor: simplify router
+Total: 38
+Passed: 38
+Failed: 0
+Warnings: 0
 ```
+
+---
+
+# Documentation
+
+If your contribution changes behavior, update the relevant documentation.
+
+This may include:
+
+* README
+* CHANGELOG
+* docs/
+* command documentation
+
+---
+
+# Pull Requests
+
+Before opening a Pull Request:
+
+* Ensure your branch is up to date.
+* Keep changes focused on a single topic.
+* Write clear commit messages.
+* Include documentation updates when appropriate.
+* Verify all tests pass.
+
+Large architectural changes should be discussed through a GitHub Issue before implementation.
 
 ---
 
 # Reporting Issues
 
-When opening an issue, please include:
+When reporting a bug, please include:
 
-- MDW Toolkit version
-- PowerShell version
-- Windows version
-- Steps to reproduce
-- Expected behavior
-- Actual behavior
-
----
-
-# Feature Requests
-
-Feature requests are welcome.
-
-Please describe:
-
-- The problem
-- The proposed solution
-- Expected workflow
-- Potential benefits
+* MDW version
+* PowerShell version
+* Windows version
+* Steps to reproduce
+* Expected behavior
+* Actual behavior
+* Relevant logs or screenshots
 
 ---
 
-# Code of Conduct
+# Questions
 
-Be respectful.
-
-Constructive discussions and collaboration are encouraged.
+If you have questions about the project, please use GitHub Discussions or open an Issue.
 
 ---
 
-Thank you for helping improve MDW Toolkit.
+# Thank You
+
+Every contribution, whether it is code, documentation, testing, or feedback, helps improve MDW.
+
+Thank you for helping make the project better.

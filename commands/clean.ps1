@@ -1,4 +1,4 @@
-<#
+﻿<#
 MDW Clean Command
 PowerShell 5.1 / 7 compatible
 #>
@@ -26,8 +26,6 @@ function Invoke-MDWClean {
         throw "Plugin slug could not be resolved."
     }
 
-    Write-Host "[MDW] Clean started: $pluginSlug" -ForegroundColor Cyan
-
     $toolkitRoot = Get-MDWToolkitPath
     $pluginPath = Get-MDWPluginPath -PluginSlug $pluginSlug
     $buildPath = Get-MDWBuildPluginPath -PluginSlug $pluginSlug
@@ -39,6 +37,14 @@ function Invoke-MDWClean {
         throw "Plugin directory not found: $pluginPath"
     }
 
+    Write-MDWHeader -Title "MDW Toolkit" -Subtitle "Clean"
+
+    Write-MDWSection -Title "Plugin"
+    Write-MDWInfoCard -Label "Plugin" -Value $pluginSlug
+
+    Write-MDWSection -Title "Steps"
+    Write-MDWStatus -Status "INFO" -Message "Clean build and release outputs"
+
     $pathsToClean = @(
         $buildPath,
         $releasePath,
@@ -49,9 +55,11 @@ function Invoke-MDWClean {
     foreach ($path in $pathsToClean) {
         if (Test-Path -LiteralPath $path) {
             Remove-Item -LiteralPath $path -Recurse -Force
-            Write-Host "[MDW] Removed: $path"
+            Write-MDWStatus -Status "OK" -Message ("Removed: {0}" -f $path)
         }
     }
+
+    Write-MDWStatus -Status "INFO" -Message "Clean temporary files"
 
     $temporaryPatterns = @(
         "*.tmp",
@@ -60,13 +68,21 @@ function Invoke-MDWClean {
         "*.zip"
     )
 
+    $removedTempCount = 0
+
     foreach ($pattern in $temporaryPatterns) {
         Get-ChildItem -LiteralPath $pluginPath -Filter $pattern -Recurse -Force -ErrorAction SilentlyContinue |
             ForEach-Object {
                 Remove-Item -LiteralPath $_.FullName -Force
-                Write-Host "[MDW] Removed temp file: $($_.FullName)"
+                $removedTempCount++
             }
     }
 
-    Write-Host "[MDW] Clean completed: $pluginSlug" -ForegroundColor Green
+    Write-MDWStatus -Status "OK" -Message ("Temporary files removed: {0}" -f $removedTempCount)
+
+    Write-MDWSection -Title "Output"
+    Write-MDWInfoCard -Label "Build" -Value $buildPath
+    Write-MDWInfoCard -Label "Release" -Value $releasePath
+
+    Write-MDWResult -Status "OK" -Message "Clean completed."
 }

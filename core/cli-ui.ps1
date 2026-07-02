@@ -1,164 +1,256 @@
 <#
-MDW CLI UI Helpers
+MDW CLI UI Helper
 PowerShell 5.1 / 7 compatible
 #>
 
 Set-StrictMode -Version 2.0
 
-function Write-MDWColor {
-    [CmdletBinding()]
-    param(
-        [string] $Text,
-        [string] $Color = "White",
-        [switch] $NoNewline
-    )
+$script:MDW_UI_MIN_WIDTH = 50
+$script:MDW_UI_MAX_WIDTH = 78
+$script:MDW_UI_LABEL_WIDTH = 12
+$script:MDW_UI_SECTION_WRITTEN = $false
 
-    if ($NoNewline) {
-        Write-Host $Text -ForegroundColor $Color -NoNewline
+function Write-MDWLogo {
+    [CmdletBinding()]
+    param()
+
+    $logo = @'
+ __  __ ____  __        __
+|  \/  |  _ \ \ \      / /
+| |\/| | | | | \ \ /\ / /
+| |  | | |_| |  \ V  V /
+|_|  |_|____/    \_/\_/
+'@
+
+    Write-Host $logo -ForegroundColor Cyan
+    Write-Host "             MDW TOOLKIT" -ForegroundColor Cyan
+    Write-Host "     Professional WordPress CLI Toolkit" -ForegroundColor DarkGray
+    Write-Host ""
+}
+
+function Get-MDWTerminalWidth {
+    [CmdletBinding()]
+    param()
+
+    try {
+        $width = [int]$Host.UI.RawUI.WindowSize.Width
+
+        if ($width -lt $script:MDW_UI_MIN_WIDTH) {
+            return $script:MDW_UI_MIN_WIDTH
+        }
+
+        if ($width -gt $script:MDW_UI_MAX_WIDTH) {
+            return $script:MDW_UI_MAX_WIDTH
+        }
+
+        return ($width - 2)
     }
-    else {
-        Write-Host $Text -ForegroundColor $Color
+    catch {
+        return 58
     }
 }
 
-function Write-MDWDivider {
+function Get-MDWCommandColumnWidth {
     [CmdletBinding()]
-    param(
-        [int] $Width = 60
-    )
+    param()
 
-    if ($Width -lt 20) {
-        $Width = 20
+    $width = Get-MDWTerminalWidth
+
+    if ($width -le 58) {
+        return 24
     }
 
-    Write-MDWColor -Text ("=" * $Width) -Color "DarkGray"
+    return 28
+}
+
+function Format-MDWText {
+    [CmdletBinding()]
+    param(
+        [AllowNull()]
+        [object] $Value,
+        [int] $MaxLength = 0
+    )
+
+    if ($null -eq $Value) {
+        return "Not available"
+    }
+
+    $text = [string]$Value
+
+    if ([string]::IsNullOrWhiteSpace($text)) {
+        return "Not available"
+    }
+
+    if ($MaxLength -gt 3 -and $text.Length -gt $MaxLength) {
+        return ($text.Substring(0, $MaxLength - 3) + "...")
+    }
+
+    return $text
+}
+
+function Write-MDWLine {
+    [CmdletBinding()]
+    param(
+        [string] $Character = "=",
+        [int] $Width = 0
+    )
+
+    if ($Width -le 0) {
+        $Width = Get-MDWTerminalWidth
+    }
+
+    Write-Host (($Character) * $Width) -ForegroundColor DarkGray
 }
 
 function Write-MDWHeader {
     [CmdletBinding()]
     param(
-        [string] $Title = "MDW Toolkit",
-        [string] $Subtitle = "Professional WordPress CLI Toolkit"
+        [Parameter(Mandatory = $true)]
+        [string] $Title,
+
+        [string] $Subtitle = ""
     )
 
-    Write-Host ""
-    Write-MDWDivider
-    Write-MDWColor -Text (" {0}" -f $Title) -Color "Cyan"
-    Write-MDWColor -Text (" {0}" -f $Subtitle) -Color "Cyan"
-    Write-MDWDivider
+    $script:MDW_UI_SECTION_WRITTEN = $false
+
+    Write-MDWLine -Character "="
+    Write-Host (" {0}" -f $Title) -ForegroundColor Cyan
+
+    if (-not [string]::IsNullOrWhiteSpace($Subtitle)) {
+        Write-Host (" {0}" -f $Subtitle) -ForegroundColor Cyan
+    }
+
+    Write-MDWLine -Character "="
     Write-Host ""
 }
 
 function Write-MDWSection {
     [CmdletBinding()]
     param(
+        [Parameter(Mandatory = $true)]
         [string] $Title
     )
 
+    if ($script:MDW_UI_SECTION_WRITTEN) {
+        Write-Host ""
+    }
+
+    Write-Host $Title -ForegroundColor Yellow
+    Write-MDWLine -Character "-"
     Write-Host ""
-    Write-MDWColor -Text $Title -Color "Yellow"
-    Write-MDWColor -Text ("-" * 40) -Color "DarkGray"
+
+    $script:MDW_UI_SECTION_WRITTEN = $true
+}
+
+function Write-MDWInfoCard {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Label,
+
+        [AllowNull()]
+        [object] $Value
+    )
+
+    $safeValue = ""
+
+    if ($null -ne $Value) {
+        $safeValue = [string]$Value
+    }
+
+    $availableWidth = (Get-MDWTerminalWidth) - $script:MDW_UI_LABEL_WIDTH - 6
+
+    if ($availableWidth -lt 16) {
+        $availableWidth = 16
+    }
+
+    $safeValue = Format-MDWText -Value $safeValue -MaxLength $availableWidth
+
+    Write-Host ("  {0,-$script:MDW_UI_LABEL_WIDTH} : {1}" -f $Label, $safeValue)
 }
 
 function Write-MDWCommandList {
     [CmdletBinding()]
     param(
-        [object[]] $Commands
+        [Parameter(Mandatory = $true)]
+        [array] $Commands
     )
 
+    $commandWidth = Get-MDWCommandColumnWidth
+
     foreach ($command in $Commands) {
-        Write-Host ("  {0,-14} {1}" -f $command.Name, $command.Description)
+        $name = [string]$command.Name
+        $description = [string]$command.Description
+
+        $availableWidth = (Get-MDWTerminalWidth) - $commandWidth - 3
+        $description = Format-MDWText -Value $description -MaxLength $availableWidth
+
+        Write-Host ("  {0,-$commandWidth} {1}" -f $name, $description)
     }
 }
 
 function Write-MDWExample {
     [CmdletBinding()]
     param(
+        [Parameter(Mandatory = $true)]
         [string] $Command
     )
 
-    Write-MDWColor -Text ("  {0}" -f $Command) -Color "Gray"
+    Write-Host ("  {0}" -f $Command)
 }
 
-function Write-MDWInfoCard {
+function Write-MDWStatus {
     [CmdletBinding()]
     param(
-        [string] $Label,
-        [object] $Value
-    )
-
-    if ($null -eq $Value -or [string]::IsNullOrWhiteSpace([string] $Value)) {
-        $Value = "Not configured"
-    }
-
-    Write-Host ("  {0,-14}: {1}" -f $Label, $Value)
-}
-
-function Write-MDWStatusLine {
-    [CmdletBinding()]
-    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateSet("OK", "WARN", "FAIL", "INFO")]
         [string] $Status,
+
+        [Parameter(Mandatory = $true)]
         [string] $Message
     )
 
-    $normalizedStatus = $Status.ToUpperInvariant()
-    $color = "Cyan"
+    $color = "Gray"
 
-    if ($normalizedStatus -eq "OK") {
-        $color = "Green"
-    }
-    elseif ($normalizedStatus -eq "WARN") {
-        $color = "Yellow"
-    }
-    elseif ($normalizedStatus -eq "FAIL") {
-        $color = "Red"
-    }
-
-    Write-MDWColor -Text ("  [{0,-4}] " -f $normalizedStatus) -Color $color -NoNewline
-    Write-Host $Message
-}
-
-function Write-MDWStep {
-    [CmdletBinding()]
-    param(
-        [string] $Name,
-        [string] $Status = "INFO"
-    )
-
-    Write-MDWStatusLine -Status $Status -Message $Name
-}
-
-function Write-MDWPipeline {
-    [CmdletBinding()]
-    param(
-        [string[]] $Steps
-    )
-
-    foreach ($step in $Steps) {
-        Write-Host ("  {0}" -f $step)
-        if ($step -ne $Steps[$Steps.Count - 1]) {
-            Write-MDWColor -Text "  |" -Color "DarkGray"
+    switch ($Status) {
+        "OK" {
+            $color = "Green"
+        }
+        "WARN" {
+            $color = "DarkYellow"
+        }
+        "FAIL" {
+            $color = "Red"
+        }
+        "INFO" {
+            $color = "Cyan"
         }
     }
+
+    $availableWidth = (Get-MDWTerminalWidth) - 11
+    $safeMessage = Format-MDWText -Value $Message -MaxLength $availableWidth
+
+    Write-Host ("  [{0,-4}] {1}" -f $Status, $safeMessage) -ForegroundColor $color
 }
 
-function Write-MDWTestSummary {
+function Write-MDWResult {
     [CmdletBinding()]
     param(
-        [object] $Result
+        [Parameter(Mandatory = $true)]
+        [ValidateSet("OK", "WARN", "FAIL", "INFO")]
+        [string] $Status,
+
+        [Parameter(Mandatory = $true)]
+        [string] $Message
     )
 
-    Write-MDWSection -Title "Test Report"
-    Write-MDWInfoCard -Label "Total" -Value ($Result.PassedCount + $Result.FailedCount)
-    Write-MDWInfoCard -Label "Passed" -Value $Result.PassedCount
-    Write-MDWInfoCard -Label "Failed" -Value $Result.FailedCount
-    Write-MDWInfoCard -Label "Warnings" -Value $Result.WarningCount
-    Write-MDWInfoCard -Label "Duration" -Value ("{0:N2} sec" -f $Result.Duration)
+    Write-MDWSection -Title "Result"
+    Write-MDWStatus -Status $Status -Message $Message
+}
 
-    if ($Result.Passed) {
-        Write-MDWStatusLine -Status "OK" -Message "Result: PASS"
-    }
-    else {
-        Write-MDWStatusLine -Status "FAIL" -Message "Result: FAIL"
-    }
+function Write-MDWBlank {
+    [CmdletBinding()]
+    param()
+
+    Write-Host ""
 }

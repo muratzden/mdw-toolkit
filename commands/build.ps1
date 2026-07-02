@@ -23,19 +23,29 @@ function Invoke-MDWBuild {
     }
 
     if (-not $pluginSlug) {
-        throw "Plugin slug could not be resolved."
+        Write-MDWHeader -Title "MDW Toolkit" -Subtitle "Build Pipeline"
+        Write-MDWResult -Status "FAIL" -Message "Plugin slug could not be resolved."
+        return
     }
 
-    Write-MDWHeader -Title "Build Pipeline" -Subtitle $pluginSlug
-    Write-MDWStep -Name "Preparing build output" -Status "INFO"
-    Write-MDWStep -Name "Copying production files" -Status "INFO"
+    Write-MDWHeader -Title "MDW Toolkit" -Subtitle "Build Pipeline"
+
+    Write-MDWSection -Title "Plugin"
+    Write-MDWInfoCard -Label "Plugin" -Value $pluginSlug
+
+    Write-MDWSection -Title "Steps"
+    Write-MDWStatus -Status "INFO" -Message "Prepare build"
+    Write-MDWStatus -Status "INFO" -Message "Copy production files"
 
     $result = Invoke-MDWBuildService -PluginSlug $pluginSlug
 
-    Write-MDWStep -Name "Validating output" -Status "OK"
-    Write-MDWSection -Title "Build Output"
+    Write-MDWStatus -Status "OK" -Message "Validate build"
+
+    Write-MDWSection -Title "Output"
     Write-MDWInfoCard -Label "Source" -Value $result.SourcePath
     Write-MDWInfoCard -Label "Build" -Value $result.BuildPath
-    Write-MDWStatusLine -Status "OK" -Message "Build completed."
-    Write-Host ""
+
+    Write-MDWResult `
+        -Status "OK" `
+        -Message "Build completed successfully."
 }

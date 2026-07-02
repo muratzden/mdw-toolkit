@@ -18,40 +18,66 @@ function Invoke-MDWCheck {
     }
 
     if (-not $pluginSlug) {
-        $currentPath = Get-Location
-        $pluginSlug = Split-Path $currentPath -Leaf
+        Write-MDWHeader -Title "MDW Toolkit" -Subtitle "Plugin Check"
+        Write-MDWResult -Status "FAIL" -Message "Plugin slug is required."
+        return
     }
-
-    if (-not $pluginSlug) {
-        throw "Plugin slug could not be resolved."
-    }
-
-    Write-MDWHeader -Title "Plugin Check" -Subtitle $pluginSlug
-    Write-MDWStep -Name "Checking plugin folder" -Status "INFO"
 
     $result = Invoke-MDWCheckService -PluginSlug $pluginSlug
 
-    Write-MDWStatusLine -Status "OK" -Message ("Plugin folder found: {0}" -f $result.PluginPath)
-    Write-MDWStatusLine -Status "OK" -Message "Validation rules completed."
+    Write-MDWHeader -Title "MDW Toolkit" -Subtitle "Quick Plugin Check"
 
-    if ($result.WarningCount -gt 0) {
-        Write-MDWSection -Title "Warnings"
+    Write-MDWSection -Title "Plugin"
+    Write-MDWInfoCard -Label "Plugin" -Value $pluginSlug
 
-        foreach ($warning in $result.Warnings) {
-            Write-MDWStatusLine -Status "WARN" -Message $warning
+    Write-MDWSection -Title "Checks"
+
+    foreach ($section in $result.Sections) {
+        $hasWarning = $false
+        $hasError = $false
+
+        foreach ($item in $section.Items) {
+            if ($item.Status -eq "FAIL") {
+                $hasError = $true
+            }
+
+            if ($item.Status -eq "WARN") {
+                $hasWarning = $true
+            }
+        }
+
+        if ($hasError) {
+            Write-MDWStatus -Status "FAIL" -Message $section.Name
+        }
+        elseif ($hasWarning) {
+            Write-MDWStatus -Status "WARN" -Message $section.Name
+        }
+        else {
+            Write-MDWStatus -Status "OK" -Message $section.Name
         }
     }
+
+    Write-MDWSection -Title "Summary"
+    Write-MDWInfoCard -Label "Warnings" -Value $result.WarningCount
+    Write-MDWInfoCard -Label "Errors" -Value $result.ErrorCount
 
     if ($result.ErrorCount -gt 0) {
-        Write-MDWSection -Title "Errors"
+        Write-MDWResult `
+            -Status "FAIL" `
+            -Message ("Plugin check failed with {0} errors." -f $result.ErrorCount)
 
-        foreach ($errorItem in $result.Errors) {
-            Write-MDWStatusLine -Status "FAIL" -Message $errorItem
-        }
-
-        throw "Check failed with $($result.ErrorCount) error(s)."
+        return
     }
 
-    Write-MDWStatusLine -Status "OK" -Message "Check complete."
-    Write-Host ""
+    if ($result.WarningCount -gt 0) {
+        Write-MDWResult `
+            -Status "WARN" `
+            -Message ("Plugin check completed with {0} warnings." -f $result.WarningCount)
+
+        return
+    }
+
+    Write-MDWResult `
+        -Status "OK" `
+        -Message "Plugin structure valid."
 }

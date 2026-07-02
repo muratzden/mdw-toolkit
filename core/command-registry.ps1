@@ -40,6 +40,18 @@ function Get-MDWCommandRegistry {
             Description = "Show MDW workspace intelligence."
         }
 
+        git = @{
+            Script      = "commands/git.ps1"
+            EntryPoint  = "Invoke-MDWGitCommand"
+            Description = "Inspect Git repository information."
+        }
+
+        local = @{
+            Script      = "commands/local.ps1"
+            EntryPoint  = "Invoke-MDWLocal"
+            Description = "LocalWP development tools."
+        }
+
         backup = @{
             Script      = "commands/backup.ps1"
             EntryPoint  = "Invoke-MDWBackup"
@@ -72,8 +84,8 @@ function Get-MDWCommandRegistry {
 
         "plugin-check" = @{
             Script      = "commands/plugin-check.ps1"
-            EntryPoint  = "Invoke-MDWPluginCheck"
-            Description = "Run WordPress Plugin Check CLI."
+            EntryPoint  = "Invoke-MDWPluginCheckCommand"
+            Description = "Run MDW internal plugin validation."
         }
 
         test = @{

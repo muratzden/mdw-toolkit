@@ -115,7 +115,7 @@ function Get-MDWToolkitMetadata {
     }
 
     $name = Get-MDWConfigValue -Config $Config -Key "toolkit.name" -DefaultValue (Get-MDWConfigValue -Config $Config -Key "name" -DefaultValue "MDW Toolkit")
-    $version = Get-MDWConfigValue -Config $Config -Key "toolkit.version" -DefaultValue (Get-MDWConfigValue -Config $Config -Key "version" -DefaultValue "0.1.3-alpha")
+    $version = Get-MDWConfigValue -Config $Config -Key "toolkit.version" -DefaultValue (Get-MDWConfigValue -Config $Config -Key "version" -DefaultValue "0.1.7-alpha")
     $channel = Get-MDWConfigValue -Config $Config -Key "toolkit.channel" -DefaultValue "Alpha"
     $slogan = Get-MDWConfigValue -Config $Config -Key "toolkit.slogan" -DefaultValue "Build | Validate | Test | Release WordPress Plugins"
     $githubUrl = Get-MDWConfigValue -Config $Config -Key "toolkit.githubUrl" -DefaultValue "https://github.com/muratzden/mdw-toolkit"

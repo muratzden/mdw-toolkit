@@ -1,4 +1,4 @@
-<#
+﻿<#
 MDW New Command
 PowerShell 5.1 / 7 compatible
 #>
@@ -61,13 +61,25 @@ function Invoke-MDWNew {
 
     $createdProjectRoot = $false
 
+    Write-MDWHeader -Title "MDW Toolkit" -Subtitle "New Plugin"
+
+    Write-MDWSection -Title "Plugin"
+    Write-MDWInfoCard -Label "Plugin" -Value $pluginSlug
+    Write-MDWInfoCard -Label "Name" -Value $pluginName
+    Write-MDWInfoCard -Label "Target" -Value $projectPath
+
     try {
+        Write-MDWSection -Title "Steps"
+        Write-MDWStatus -Status "INFO" -Message "Create plugin directory"
+
         if (-not (Test-Path -LiteralPath $pluginsRoot)) {
             New-Item -ItemType Directory -Path $pluginsRoot -Force | Out-Null
         }
 
         New-Item -ItemType Directory -Path $projectPath -ErrorAction Stop | Out-Null
         $createdProjectRoot = $true
+
+        Write-MDWStatus -Status "INFO" -Message "Create base folders"
 
         foreach ($directoryName in @("languages", "assets", "includes")) {
             New-Item -ItemType Directory -Path (Join-Path $projectPath $directoryName) -Force -ErrorAction Stop | Out-Null
@@ -161,6 +173,8 @@ dist/
 *.tmp
 "@
 
+        Write-MDWStatus -Status "INFO" -Message "Create plugin files"
+
         Set-Content -Path $pluginFilePath -Value $pluginFileContent -Encoding UTF8 -ErrorAction Stop
         Set-Content -Path $readmeTxtPath -Value $readmeTxtContent -Encoding UTF8 -ErrorAction Stop
         Set-Content -Path $readmeMdPath -Value $readmeMdContent -Encoding UTF8 -ErrorAction Stop
@@ -174,14 +188,18 @@ dist/
             Set-Content -Path (Join-Path $projectPath $keepFile) -Value "" -Encoding UTF8 -ErrorAction Stop
         }
 
-        if (Get-Command git -ErrorAction SilentlyContinue) {
+        if (Test-MDWGit) {
             Push-Location $projectPath
 
             try {
-                & git init | Out-Null
+                Write-MDWStatus -Status "INFO" -Message "Initialize Git repository"
+                $gitResult = Invoke-MDWGit -RepositoryPath $projectPath -Arguments @("init") -AllowFailure
 
-                if ($LASTEXITCODE -ne 0) {
-                    Write-Host "[MDW] Warning: git init failed. Plugin files were created successfully." -ForegroundColor Yellow
+                if ($gitResult.Passed) {
+                    Write-MDWStatus -Status "OK" -Message "Git repository initialized"
+                }
+                else {
+                    Write-MDWStatus -Status "WARN" -Message "git init failed. Plugin files were created successfully."
                 }
             }
             finally {
@@ -189,10 +207,15 @@ dist/
             }
         }
         else {
-            Write-Host "[MDW] Warning: git was not found. Skipping git init." -ForegroundColor Yellow
+            Write-MDWStatus -Status "WARN" -Message "Git is not installed or not available in PATH. Skipping git init."
         }
 
-        Write-Host "[MDW] Plugin created: $projectPath" -ForegroundColor Green
+        Write-MDWStatus -Status "OK" -Message "Plugin scaffold created"
+
+        Write-MDWSection -Title "Output"
+        Write-MDWInfoCard -Label "Plugin" -Value $projectPath
+
+        Write-MDWResult -Status "OK" -Message "Plugin created."
     }
     catch {
         if ($createdProjectRoot -and (Test-Path -LiteralPath $projectPath)) {
