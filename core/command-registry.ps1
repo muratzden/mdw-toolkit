@@ -105,12 +105,19 @@ function Get-MDWCommandRegistry {
             EntryPoint  = "Invoke-MDWZip"
             Description = "Create release ZIP package."
         }
+		
+		validate = @{
+            Script      = "commands/validate.ps1"
+            EntryPoint  = "Invoke-MDWValidate"
+            Description = "Run release readiness validation checks."
+        }
 
         release = @{
             Script      = "commands/release.ps1"
             EntryPoint  = "Invoke-MDWRelease"
             Description = "Create a production release."
         }
+		
     }
 
     return $registry
