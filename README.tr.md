@@ -244,19 +244,15 @@ Release
 Git
 ```
 
-### Demo Videosu
-
 📹 **MDW Toolkit v1.0 Demo**
 
-> Demo videosu gerçek bir WordPress eklentisi üzerinde uçtan uca CLI iş akışını göstermektedir.
+Gerçek bir WordPress eklentisi üzerinde uçtan uca MDW Toolkit iş akışı.
 
-**Konum**
+▶️ **Demo videosunu izle / indir**
 
-```text
-assets/demo/mdw-demo-v1.0.0.mp4
-```
+[MDW Toolkit v1.0 Demo](assets/demo/mdw-demo-v1.0.0.mp4)
 
-> GitHub README içerisinde MP4 videolarını doğrudan oynatmaz. v1.0.0 GitHub Release oluşturulduktan sonra bu yol Release varlığına veya yayınlanan video bağlantısına dönüştürülecektir.
+> Tarayıcınız videoyu doğrudan oynatmıyorsa bağlantıya tıklayarak indirebilirsiniz. GitHub README içerisinde MP4 videolarını doğrudan oynatmaz. v1.0.0 GitHub Release oluşturulduktan sonra bu yol Release varlığına veya yayınlanan video bağlantısına dönüştürülecektir.
 
 ## Komut Özeti
 

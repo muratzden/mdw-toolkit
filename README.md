@@ -248,15 +248,13 @@ Git
 
 📹 **MDW Toolkit v1.0 Demo**
 
-> The demo showcases the complete CLI workflow using a real WordPress plugin project.
+The complete MDW Toolkit workflow demonstrated on a real WordPress plugin project.
 
-**Location**
+▶️ **Watch / Download the demo video**
 
-```text
-assets/demo/mdw-demo-v1.0.0.mp4
-```
+[MDW Toolkit v1.0 Demo](assets/demo/mdw-demo-v1.0.0.mp4)
 
-> GitHub does not embed MP4 files directly in README. After creating the GitHub Release, replace the path above with the Release asset URL or another hosted video link.
+> If the video does not play directly in your browser, click the link above to download it.
 
 ## Commands Overview
 
