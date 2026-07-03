@@ -1,33 +1,16 @@
 <#
-MDW LocalWP Command
+MDW Local Command
 PowerShell 5.1 / 7 compatible
 #>
 
 Set-StrictMode -Version 2.0
 
-function Get-MDWLocalWPDisplayUrl {
-    [CmdletBinding()]
-    param(
-        [object] $Report
-    )
-
-    if ($null -eq $Report -or [string]::IsNullOrWhiteSpace([string] $Report.DefaultSite)) {
-        return "Not configured"
-    }
-
-    return "https://$($Report.DefaultSite).local"
-}
-
-function Get-MDWLocalWPCheck {
+function Get-MDWLocalCheck {
     [CmdletBinding()]
     param(
         [object] $Report,
         [string] $Name
     )
-
-    if ($null -eq $Report -or $null -eq $Report.Checks) {
-        return $null
-    }
 
     foreach ($check in $Report.Checks) {
         if ($check.Name -eq $Name) {
@@ -38,97 +21,121 @@ function Get-MDWLocalWPCheck {
     return $null
 }
 
-function Write-MDWLocalWPEnvironment {
+function Write-MDWLocalEnvironment {
     [CmdletBinding()]
     param(
         [object] $Report
     )
 
-    Write-MDWHeader -Title "MDW Toolkit" -Subtitle "LocalWP"
+    Write-MDWHeader -Title "MDW Toolkit" -Subtitle "Local"
 
     Write-MDWSection -Title "Environment"
+    Write-MDWInfoCard -Label "Provider" -Value $Report.Provider
     Write-MDWInfoCard -Label "Root" -Value $Report.RootPath
-    Write-MDWInfoCard -Label "Site" -Value $Report.DefaultSite
-    Write-MDWInfoCard -Label "URL" -Value (Get-MDWLocalWPDisplayUrl -Report $Report)
+    Write-MDWInfoCard -Label "Site" -Value $Report.SitePath
+    Write-MDWInfoCard -Label "Plugins" -Value $Report.PluginsPath
+    Write-MDWInfoCard -Label "URL" -Value $Report.SiteUrl
+    Write-MDWInfoCard -Label "Admin" -Value $Report.AdminUrl
 
     Write-MDWSection -Title "Status"
 
-    $rootCheck = Get-MDWLocalWPCheck -Report $Report -Name "LocalWP root"
-    $siteCheck = Get-MDWLocalWPCheck -Report $Report -Name "Default site"
-    $pluginsCheck = Get-MDWLocalWPCheck -Report $Report -Name "Plugins directory"
+    $hasFailure = $false
 
-    if ($null -ne $rootCheck -and $rootCheck.Passed) {
-        Write-MDWStatus -Status "OK" -Message "LocalWP detected"
-    }
-    else {
-        Write-MDWStatus -Status "WARN" -Message "LocalWP installation not found"
-    }
-
-    if ($null -ne $siteCheck -and $siteCheck.Passed) {
-        Write-MDWStatus -Status "OK" -Message "Site found"
-    }
-    else {
-        Write-MDWStatus -Status "WARN" -Message "No LocalWP site found"
+    foreach ($check in $Report.Checks) {
+        if ($check.Passed) {
+            Write-MDWStatus -Status "OK" -Message $check.Name
+        }
+        else {
+            Write-MDWStatus -Status "WARN" -Message $check.Name
+            $hasFailure = $true
+        }
     }
 
-    if ($null -ne $pluginsCheck -and $pluginsCheck.Passed) {
-        Write-MDWStatus -Status "OK" -Message "WordPress detected"
-    }
-    else {
-        Write-MDWStatus -Status "WARN" -Message "WordPress installation not detected"
-    }
-
-    if ($null -ne $rootCheck -and -not $rootCheck.Passed) {
-        Write-MDWResult -Status "FAIL" -Message "LocalWP installation not found."
+    if ($hasFailure) {
+        Write-MDWResult -Status "WARN" -Message "Local environment has warnings."
         return
     }
 
-    if ($null -ne $siteCheck -and -not $siteCheck.Passed) {
-        Write-MDWResult -Status "WARN" -Message "No LocalWP site found."
-        return
-    }
-
-    if ($null -ne $pluginsCheck -and -not $pluginsCheck.Passed) {
-        Write-MDWResult -Status "WARN" -Message "WordPress installation not detected."
-        return
-    }
-
-    Write-MDWResult -Status "OK" -Message "Local development environment ready."
+    Write-MDWResult -Status "OK" -Message "Local environment ready."
 }
 
-function Write-MDWLocalWPDeployResult {
+function Write-MDWLocalPluginStatus {
+    [CmdletBinding()]
+    param(
+        [object] $Status
+    )
+
+    Write-MDWHeader -Title "MDW Toolkit" -Subtitle "Local Plugin Status"
+
+    Write-MDWSection -Title "Plugin"
+    Write-MDWInfoCard -Label "Plugin" -Value $Status.PluginSlug
+    Write-MDWInfoCard -Label "Target" -Value $Status.TargetPath
+    Write-MDWInfoCard -Label "Exists" -Value $Status.Exists
+    Write-MDWInfoCard -Label "Junction" -Value $Status.IsJunction
+    Write-MDWInfoCard -Label "Status" -Value $Status.Status
+
+    if ($Status.Exists -and $Status.IsJunction) {
+        Write-MDWResult -Status "OK" -Message "Plugin is linked to local WordPress."
+        return
+    }
+
+    if ($Status.Exists -and -not $Status.IsJunction) {
+        Write-MDWResult -Status "WARN" -Message "Plugin exists but is not a junction."
+        return
+    }
+
+    Write-MDWResult -Status "WARN" -Message "Plugin is not linked."
+}
+
+function Write-MDWLocalLinkResult {
     [CmdletBinding()]
     param(
         [object] $Result
     )
 
-    Write-MDWHeader -Title "MDW Toolkit" -Subtitle "LocalWP Deploy"
+    Write-MDWHeader -Title "MDW Toolkit" -Subtitle "Local Link"
 
     Write-MDWSection -Title "Plugin"
     Write-MDWInfoCard -Label "Plugin" -Value $Result.PluginSlug
+    Write-MDWInfoCard -Label "Source" -Value $Result.SourcePath
+    Write-MDWInfoCard -Label "Target" -Value $Result.TargetPath
 
-    Write-MDWSection -Title "Source"
-    Write-MDWInfoCard -Label "Path" -Value $Result.SourcePath
+    if ($Result.Warnings.Count -gt 0) {
+        Write-MDWSection -Title "Warnings"
 
-    Write-MDWSection -Title "Target"
-    Write-MDWInfoCard -Label "Path" -Value $Result.TargetPath
+        foreach ($warning in $Result.Warnings) {
+            Write-MDWStatus -Status "WARN" -Message $warning
+        }
+    }
+
+    if ($Result.Errors.Count -gt 0) {
+        Write-MDWSection -Title "Errors"
+
+        foreach ($errorItem in $Result.Errors) {
+            Write-MDWStatus -Status "FAIL" -Message $errorItem
+        }
+    }
 
     if ($Result.Passed) {
-        Write-MDWResult -Status "OK" -Message "Plugin deployed to LocalWP."
+        Write-MDWResult -Status "OK" -Message "Plugin linked to local WordPress."
         return
     }
 
-    Write-MDWSection -Title "Status"
+    Write-MDWResult -Status "FAIL" -Message "Plugin link failed."
+}
 
-    foreach ($warning in $Result.Warnings) {
-        Write-MDWStatus -Status "WARN" -Message $warning
+function Get-MDWLocalPluginSlugFromArguments {
+    [CmdletBinding()]
+    param(
+        [string[]] $Arguments
+    )
+
+    if ($Arguments.Count -gt 1 -and -not [string]::IsNullOrWhiteSpace($Arguments[1])) {
+        return $Arguments[1]
     }
 
-    foreach ($errorItem in $Result.Errors) {
-        Write-MDWStatus -Status "FAIL" -Message $errorItem
-    }
-
-    Write-MDWResult -Status "FAIL" -Message "Plugin was not deployed to LocalWP."
+    $currentPath = Get-Location
+    return Split-Path $currentPath -Leaf
 }
 
 function Invoke-MDWLocal {
@@ -143,28 +150,37 @@ function Invoke-MDWLocal {
         $subCommand = $Arguments[0].ToLowerInvariant()
     }
 
-    if ($subCommand -eq "info" -or $subCommand -eq "site") {
-        $report = Get-MDWLocalWPReport
-        Write-MDWLocalWPEnvironment -Report $report
+    if ($subCommand -eq "info" -or $subCommand -eq "doctor" -or $subCommand -eq "status") {
+        $report = Get-MDWLocalReport
+        Write-MDWLocalEnvironment -Report $report
         return
     }
 
-    if ($subCommand -eq "deploy") {
-        $pluginSlug = $null
-
-        if ($Arguments.Count -gt 1) {
-            $pluginSlug = $Arguments[1]
-        }
-
-        if ([string]::IsNullOrWhiteSpace($pluginSlug)) {
-            $currentPath = Get-Location
-            $pluginSlug = Split-Path $currentPath -Leaf
-        }
-
-        $result = Deploy-MDWPluginToLocalWP -PluginSlug $pluginSlug
-        Write-MDWLocalWPDeployResult -Result $result
+    if ($subCommand -eq "link") {
+        $pluginSlug = Get-MDWLocalPluginSlugFromArguments -Arguments $Arguments
+        $result = New-MDWLocalPluginLink -PluginSlug $pluginSlug
+        Write-MDWLocalLinkResult -Result $result
         return
     }
 
-    throw "Unknown local subcommand: $subCommand. Usage: mdw local [info|site|deploy <plugin-slug>]"
+    if ($subCommand -eq "plugin-status") {
+        $pluginSlug = Get-MDWLocalPluginSlugFromArguments -Arguments $Arguments
+        $status = Get-MDWLocalPluginStatus -PluginSlug $pluginSlug
+        Write-MDWLocalPluginStatus -Status $status
+        return
+    }
+
+    if ($subCommand -eq "open") {
+        $config = Get-MDWLocalConfig
+        Start-Process $config.siteUrl
+        return
+    }
+
+    if ($subCommand -eq "admin") {
+        $config = Get-MDWLocalConfig
+        Start-Process $config.adminUrl
+        return
+    }
+
+    throw "Unknown local subcommand: $subCommand. Usage: mdw local [info|doctor|status|link <plugin-slug>|plugin-status <plugin-slug>|open|admin]"
 }

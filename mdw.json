@@ -18,8 +18,20 @@
     "releasePath": "C:\\Workspace\\Releases",
     "releasesPath": "C:\\Workspace\\Releases"
   },
-  "localwp": {
+  "local": {
+    "provider": "laragon"
+  },
+  "laragon": {
     "enabled": true,
+    "rootPath": "C:\\laragon",
+    "wwwPath": "C:\\laragon\\www",
+    "sitePath": "C:\\laragon\\www\\cck-test",
+    "pluginsPath": "C:\\laragon\\www\\cck-test\\wp-content\\plugins",
+    "siteUrl": "http://localhost/cck-test",
+    "adminUrl": "http://localhost/cck-test/wp-admin"
+  },
+  "localwp": {
+    "enabled": false,
     "rootPath": "C:\\Users\\murat\\Local Sites",
     "defaultSite": "template-test",
     "pluginsRelativePath": "app\\public\\wp-content\\plugins"
