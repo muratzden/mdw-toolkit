@@ -1,8 +1,35 @@
-# Changelog
+﻿# Changelog
 
 All notable changes to this project will be documented in this file.
 
-The format of this changelog is based on **Keep a Changelog** and this project follows **Semantic Versioning (SemVer)**.
+The format of this changelog is based on Keep a Changelog and this project follows Semantic Versioning.
+
+---
+
+## [1.1.0] - 2026-07-03
+
+### Added
+
+* Compliance Suite foundation.
+* `mdw lint` command for PHP syntax checks.
+* `mdw validate` release readiness flow.
+* Command-specific help pages with `mdw help <command>`.
+* WP-CLI mode for `mdw plugin-check` with WordPress test path support.
+* GitHub Actions workflow for automated test execution.
+
+### Changed
+
+* Standardized validate output through the shared CLI output layer.
+* Updated release pipeline to run backup, build, validate and ZIP stages.
+* Improved build exclusion rules for production packages.
+* Updated toolkit metadata to v1.1.0 Stable.
+* Refreshed README for public v1.1 release readiness.
+
+### Fixed
+
+* Removed output helper name collisions that could override core CLI helpers.
+* Replaced hardcoded validate plugin path resolution with the central path service.
+* Improved plugin-check handling for empty WP-CLI output lines.
 
 ---
 
@@ -54,13 +81,3 @@ The format of this changelog is based on **Keep a Changelog** and this project f
 * Build pipeline reliability.
 * Release pipeline reliability.
 * General production hardening.
-
----
-
-## Release Notes
-
-Version **1.0.0** is the first stable public release of MDW.
-
-This release establishes the core architecture of the toolkit, including workspace management, build automation, release workflows, validation services, Git integration, LocalWP integration, centralized configuration, and a unified command-line experience.
-
-The focus of this release is stability, consistency, maintainability, and production readiness rather than feature expansion.

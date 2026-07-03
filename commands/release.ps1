@@ -43,9 +43,8 @@ function Invoke-MDWRelease {
 
     Write-MDWSection -Title "Pipeline"
     Write-MDWStatus -Status "INFO" -Message "Backup"
-    Write-MDWStatus -Status "INFO" -Message "Clean"
     Write-MDWStatus -Status "INFO" -Message "Build"
-    Write-MDWStatus -Status "INFO" -Message "Check"
+    Write-MDWStatus -Status "INFO" -Message "Validate"
     Write-MDWStatus -Status "INFO" -Message "ZIP"
     Write-MDWStatus -Status "INFO" -Message "Release Complete"
 
@@ -55,16 +54,29 @@ function Invoke-MDWRelease {
         Invoke-MDWBackup -Arguments @($pluginSlug)
 
         Write-MDWBlank
-        Write-MDWStatus -Status "INFO" -Message "Run clean"
-        Invoke-MDWClean -Arguments @($pluginSlug)
-
-        Write-MDWBlank
         Write-MDWStatus -Status "INFO" -Message "Run build"
         Invoke-MDWBuild -Arguments @($pluginSlug)
 
+        $buildPath = Get-MDWBuildPluginPath -PluginSlug $pluginSlug
+        if (-not (Test-Path -LiteralPath $buildPath -PathType Container)) {
+            Write-MDWResult -Status "FAIL" -Message "Build output was not created."
+            return
+        }
+
         Write-MDWBlank
-        Write-MDWStatus -Status "INFO" -Message "Run check"
-        Invoke-MDWCheck -Arguments @($pluginSlug)
+        Write-MDWStatus -Status "INFO" -Message "Run validate"
+        $validateResult = Invoke-MDWValidateService -ToolkitRoot (Get-MDWToolkitPath) -PluginSlug $pluginSlug
+
+        if (-not $validateResult.Passed) {
+            Write-MDWSection -Title "Validate"
+            foreach ($errorItem in $validateResult.Errors) {
+                Write-MDWStatus -Status "FAIL" -Message $errorItem
+            }
+            Write-MDWResult -Status "FAIL" -Message "Release stopped because validation failed."
+            return
+        }
+
+        Write-MDWStatus -Status "OK" -Message "Validate passed"
 
         Write-MDWBlank
         Write-MDWStatus -Status "INFO" -Message "Run ZIP"

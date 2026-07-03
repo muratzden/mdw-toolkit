@@ -1,73 +1,88 @@
-<#
+﻿<#
 MDW Output Service
 PowerShell 5.1 / 7 compatible
+
+Compatibility helpers for older service code. Core CLI rendering is provided by
+core/cli-ui.ps1 and these wrappers intentionally avoid redefining core helper
+names such as Write-MDWSection.
 #>
 
 Set-StrictMode -Version 2.0
 
 function Write-MDWTitle {
-    param([string] $Text)
+    [CmdletBinding()]
+    param(
+        [string] $Text
+    )
 
-    Write-Host ""
-    Write-Host ("=" * 38) -ForegroundColor Cyan
-    Write-Host " $Text" -ForegroundColor Cyan
-    Write-Host ("=" * 38) -ForegroundColor Cyan
-    Write-Host ""
+    Write-MDWHeader -Title "MDW Toolkit" -Subtitle $Text
 }
 
-function Write-MDWSection {
-    param([string] $Text)
+function Write-MDWOutputSection {
+    [CmdletBinding()]
+    param(
+        [string] $Text
+    )
 
-    Write-Host ""
-    Write-Host $Text -ForegroundColor Cyan
-    Write-Host ("-" * $Text.Length) -ForegroundColor Cyan
+    Write-MDWSection -Title $Text
 }
 
 function Write-MDWInfo {
-    param([string] $Message)
+    [CmdletBinding()]
+    param(
+        [string] $Message
+    )
 
-    Write-Host "[INFO] $Message" -ForegroundColor Cyan
+    Write-MDWStatus -Status "INFO" -Message $Message
 }
 
 function Write-MDWSuccess {
-    param([string] $Message)
+    [CmdletBinding()]
+    param(
+        [string] $Message
+    )
 
-    Write-Host "[PASS] $Message" -ForegroundColor Green
+    Write-MDWStatus -Status "OK" -Message $Message
 }
 
 function Write-MDWWarning {
-    param([string] $Message)
+    [CmdletBinding()]
+    param(
+        [string] $Message
+    )
 
-    Write-Host "[WARN] $Message" -ForegroundColor Yellow
+    Write-MDWStatus -Status "WARN" -Message $Message
 }
 
 function Write-MDWError {
-    param([string] $Message)
+    [CmdletBinding()]
+    param(
+        [string] $Message
+    )
 
-    Write-Host "[FAIL] $Message" -ForegroundColor Red
+    Write-MDWStatus -Status "FAIL" -Message $Message
 }
 
 function Write-MDWSummary {
+    [CmdletBinding()]
     param(
         [int] $Failed,
         [int] $Warnings
     )
 
-    Write-MDWSection "Validate Summary"
-
-    Write-Host "Failed   : $Failed"
-    Write-Host "Warnings : $Warnings"
-    Write-Host ""
+    Write-MDWSection -Title "Summary"
+    Write-MDWInfoCard -Label "Failed" -Value $Failed
+    Write-MDWInfoCard -Label "Warnings" -Value $Warnings
 
     if ($Failed -gt 0) {
-        Write-Host "Result   : FAILED" -ForegroundColor Red
+        Write-MDWResult -Status "FAIL" -Message "Result: FAILED"
         return
     }
 
     if ($Warnings -gt 0) {
-        Write-Host "Result   : PASSED WITH WARNINGS" -ForegroundColor Yellow
+        Write-MDWResult -Status "WARN" -Message "Result: PASSED WITH WARNINGS"
         return
     }
 
-    Write-Host "Result   : PASSED" -ForegroundColor Green
+    Write-MDWResult -Status "OK" -Message "Result: PASSED"
 }

@@ -24,6 +24,71 @@ function Get-MDWZipDisplaySize {
     return ("{0:N2} MB" -f ($length / 1MB))
 }
 
+function New-MDWZipPackage {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $SourceDirectory,
+
+        [Parameter(Mandatory = $true)]
+        [string] $DestinationZip,
+
+        [Parameter(Mandatory = $true)]
+        [string] $RootFolderName
+    )
+
+    Add-Type -AssemblyName System.IO.Compression
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+    if (Test-Path -LiteralPath $DestinationZip -PathType Leaf) {
+        Remove-Item -LiteralPath $DestinationZip -Force
+    }
+
+    $destinationDirectory = Split-Path -Parent $DestinationZip
+
+    if (-not (Test-Path -LiteralPath $destinationDirectory -PathType Container)) {
+        New-Item -ItemType Directory -Path $destinationDirectory -Force | Out-Null
+    }
+
+    $zipStream = [System.IO.File]::Open(
+        $DestinationZip,
+        [System.IO.FileMode]::CreateNew,
+        [System.IO.FileAccess]::ReadWrite,
+        [System.IO.FileShare]::None
+    )
+
+    try {
+        $archive = New-Object System.IO.Compression.ZipArchive(
+            $zipStream,
+            [System.IO.Compression.ZipArchiveMode]::Create,
+            $false
+        )
+
+        try {
+            $sourceRoot = (Resolve-Path -LiteralPath $SourceDirectory).Path.TrimEnd('\', '/')
+            $files = Get-ChildItem -LiteralPath $sourceRoot -File -Recurse -Force
+
+            foreach ($file in $files) {
+                $relativePath = $file.FullName.Substring($sourceRoot.Length).TrimStart('\', '/')
+                $entryName = ($RootFolderName + "/" + $relativePath.Replace('\', '/')).TrimStart('/')
+
+                [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
+                    $archive,
+                    $file.FullName,
+                    $entryName,
+                    [System.IO.Compression.CompressionLevel]::Optimal
+                ) | Out-Null
+            }
+        }
+        finally {
+            $archive.Dispose()
+        }
+    }
+    finally {
+        $zipStream.Dispose()
+    }
+}
+
 function Invoke-MDWZip {
     [CmdletBinding()]
     param(
@@ -73,34 +138,10 @@ function Invoke-MDWZip {
     Write-MDWStatus -Status "INFO" -Message "Create ZIP package"
 
     try {
-        if (-not (Test-Path -LiteralPath $releasePluginRoot -PathType Container)) {
-            New-Item -ItemType Directory -Path $releasePluginRoot -Force | Out-Null
-        }
-
-        if (Test-Path -LiteralPath $zipPath -PathType Leaf) {
-            Remove-Item -LiteralPath $zipPath -Force
-        }
-
-        $temporaryZipRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("mdw-zip-" + [System.Guid]::NewGuid().ToString("N"))
-        $temporaryPluginPath = Join-Path $temporaryZipRoot $pluginSlug
-
-        try {
-            New-Item -ItemType Directory -Path $temporaryPluginPath -Force | Out-Null
-
-            foreach ($item in $buildItems) {
-                Copy-Item -LiteralPath $item.FullName -Destination $temporaryPluginPath -Recurse -Force
-            }
-
-            Compress-Archive `
-                -Path $temporaryPluginPath `
-                -DestinationPath $zipPath `
-                -Force
-        }
-        finally {
-            if (Test-Path -LiteralPath $temporaryZipRoot) {
-                Remove-Item -LiteralPath $temporaryZipRoot -Recurse -Force -ErrorAction SilentlyContinue
-            }
-        }
+        New-MDWZipPackage `
+            -SourceDirectory $buildPath `
+            -DestinationZip $zipPath `
+            -RootFolderName $pluginSlug
 
         Write-MDWStatus -Status "OK" -Message "ZIP package created"
 

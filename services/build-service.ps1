@@ -29,10 +29,14 @@ function Test-MDWBuildExcludedName {
         ".DS_Store",
         "Thumbs.db",
         "Desktop.ini",
+        "README.md",
         "PROJECT.md",
         "CHANGELOG.md",
         "CONTRIBUTING.md",
         "ROADMAP.md",
+        "composer.lock",
+        "phpunit.xml",
+        "phpunit.xml.dist",
         "new-command.ps1",
         "Mdw.Core.ps1"
     )

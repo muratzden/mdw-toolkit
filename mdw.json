@@ -1,10 +1,10 @@
-{
+﻿{
   "name": "mdw-toolkit",
-  "version": "0.1.7-alpha",
+  "version": "1.1.0",
   "toolkit": {
     "name": "MDW Toolkit",
-    "version": "0.1.7-alpha",
-    "channel": "Alpha",
+    "version": "1.1.0",
+    "channel": "Stable",
     "slogan": "Build | Validate | Test | Release WordPress Plugins",
     "githubUrl": "https://github.com/muratzden/mdw-toolkit"
   },

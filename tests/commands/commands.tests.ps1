@@ -1,4 +1,4 @@
-$tests = New-Object System.Collections.Generic.List[object]
+﻿$tests = New-Object System.Collections.Generic.List[object]
 
 $commands = @(
     @{ Name = "new"; EntryPoint = "Invoke-MDWNew" }
@@ -9,9 +9,11 @@ $commands = @(
     @{ Name = "doctor"; EntryPoint = "Invoke-MDWDoctor" }
     @{ Name = "build"; EntryPoint = "Invoke-MDWBuild" }
     @{ Name = "check"; EntryPoint = "Invoke-MDWCheck" }
+    @{ Name = "lint"; EntryPoint = "Invoke-MDWLint" }
+    @{ Name = "plugin-check"; EntryPoint = "Invoke-MDWPluginCheckCommand" }
+    @{ Name = "validate"; EntryPoint = "Invoke-MDWValidate" }
     @{ Name = "zip"; EntryPoint = "Invoke-MDWZip" }
     @{ Name = "release"; EntryPoint = "Invoke-MDWRelease" }
-    @{ Name = "plugin-check"; EntryPoint = "Invoke-MDWPluginCheckCommand" }
     @{ Name = "test"; EntryPoint = "Invoke-MDWTest" }
 )
 
