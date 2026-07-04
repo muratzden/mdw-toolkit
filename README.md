@@ -55,6 +55,7 @@ Paths are managed through `mdw.json`.
 - Internal plugin check suite
 - WordPress compliance foundation checks
 - Compliance prefix validation for WordPress-safe identifiers
+- Dry-run and backed-up prefix auto-fix for PHP identifiers
 - WP-CLI WordPress Plugin Check integration
 - Build pipeline with production exclusions
 - ZIP generation with correct `plugin-slug/` package root
@@ -102,6 +103,8 @@ mdw lint my-plugin
 mdw plugin-check my-plugin
 mdw compliance my-plugin
 mdw compliance my-plugin --prefix craftcommercekit_reviewflow_
+mdw compliance fix my-plugin --prefix craftcommercekit_reviewflow_ --whatif
+mdw compliance fix my-plugin --prefix craftcommercekit_reviewflow_
 mdw build my-plugin
 mdw zip my-plugin
 mdw release my-plugin
@@ -210,5 +213,6 @@ mdw test
 ## License
 
 MDW Toolkit is released under the MIT License. See `LICENSE` for details.
+
 
 

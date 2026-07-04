@@ -150,3 +150,87 @@ function wp_structured_check() {}
     }
 }
 
+Describe "MDW Compliance Prefix Fixer" {
+    It "dry-run reports replacements without modifying files" {
+        $pluginPath = New-MDWCompliancePesterPlugin -Name "prefix-fix-dry" -PhpCode @"
+<?php
+function abc_run() {}
+"@
+        $file = Join-Path $pluginPath "prefix-fix-dry.php"
+
+        try {
+            $result = Invoke-MDWComplianceFixService -PluginSlug "prefix-fix-dry" -PluginPath $pluginPath -ExpectedPrefix "craftcommercekit_reviewflow_" -WhatIf
+            $content = Get-Content -LiteralPath $file -Raw
+
+            ($result.ReplacementCount -gt 0) | Should Be $true
+            $result.WhatIf | Should Be $true
+            ($content -match "abc_run") | Should Be $true
+        }
+        finally {
+            Remove-MDWCompliancePesterPlugin -Path $pluginPath
+        }
+    }
+
+    It "real fix creates a backup and replaces unsafe prefixes" {
+        $pluginPath = New-MDWCompliancePesterPlugin -Name "prefix-fix-real" -PhpCode @"
+<?php
+function abc_run() {}
+"@
+        $file = Join-Path $pluginPath "prefix-fix-real.php"
+
+        try {
+            $result = Invoke-MDWComplianceFixService -PluginSlug "prefix-fix-real" -PluginPath $pluginPath -ExpectedPrefix "craftcommercekit_reviewflow_"
+            $content = Get-Content -LiteralPath $file -Raw
+
+            ($result.ReplacementCount -gt 0) | Should Be $true
+            (Test-Path -LiteralPath $result.BackupPath -PathType Container) | Should Be $true
+            ($content -match "craftcommercekit_reviewflow_run") | Should Be $true
+            ($content -match "abc_run") | Should Be $false
+        }
+        finally {
+            Remove-MDWCompliancePesterPlugin -Path $pluginPath
+        }
+    }
+
+    It "does not modify vendor files" {
+        $pluginPath = New-MDWCompliancePesterPlugin -Name "prefix-fix-vendor" -PhpCode @"
+<?php
+function abc_main() {}
+"@
+        $vendorPath = Join-Path $pluginPath "vendor"
+        New-Item -ItemType Directory -Path $vendorPath -Force | Out-Null
+        $vendorFile = Join-Path $vendorPath "third-party.php"
+        Set-Content -LiteralPath $vendorFile -Value "<?php`nfunction abc_vendor() {}" -Encoding ASCII
+
+        try {
+            Invoke-MDWComplianceFixService -PluginSlug "prefix-fix-vendor" -PluginPath $pluginPath -ExpectedPrefix "craftcommercekit_reviewflow_" | Out-Null
+            $vendorContent = Get-Content -LiteralPath $vendorFile -Raw
+            ($vendorContent -match "abc_vendor") | Should Be $true
+        }
+        finally {
+            Remove-MDWCompliancePesterPlugin -Path $pluginPath
+        }
+    }
+
+    It "preserves plugin slug and text domain" {
+        $pluginPath = New-MDWCompliancePesterPlugin -Name "prefix-fix-textdomain" -PhpCode @"
+<?php
+/*
+Plugin Name: Prefix Fix Text Domain
+Text Domain: prefix-fix-textdomain
+*/
+function abc_boot() {}
+"@
+        $file = Join-Path $pluginPath "prefix-fix-textdomain.php"
+
+        try {
+            Invoke-MDWComplianceFixService -PluginSlug "prefix-fix-textdomain" -PluginPath $pluginPath -ExpectedPrefix "craftcommercekit_reviewflow_" | Out-Null
+            $content = Get-Content -LiteralPath $file -Raw
+            ($content -match "Text Domain: prefix-fix-textdomain") | Should Be $true
+            ($content -match "craftcommercekit_reviewflow_boot") | Should Be $true
+        }
+        finally {
+            Remove-MDWCompliancePesterPlugin -Path $pluginPath
+        }
+    }
+}

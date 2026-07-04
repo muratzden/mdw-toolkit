@@ -25,6 +25,51 @@ function Get-MDWComplianceArgumentValue {
     return $null
 }
 
+function Test-MDWComplianceFlag {
+    [CmdletBinding()]
+    param(
+        [string[]] $Arguments,
+        [string] $Name
+    )
+
+    if (-not $Arguments) {
+        return $false
+    }
+
+    foreach ($argument in $Arguments) {
+        if ($argument -eq $Name -or $argument -eq $Name.Replace("-", "--")) {
+            return $true
+        }
+    }
+
+    return $false
+}
+
+function Get-MDWCompliancePluginArgument {
+    [CmdletBinding()]
+    param(
+        [string[]] $Arguments,
+        [int] $StartIndex = 0
+    )
+
+    if (-not $Arguments) {
+        return $null
+    }
+
+    for ($index = $StartIndex; $index -lt $Arguments.Count; $index++) {
+        $argument = $Arguments[$index]
+
+        if ($argument -like "-*") {
+            $index++
+            continue
+        }
+
+        return $argument
+    }
+
+    return $null
+}
+
 function Format-MDWComplianceFindingMessage {
     [CmdletBinding()]
     param(
@@ -55,46 +100,27 @@ function Format-MDWComplianceFindingMessage {
     return ($parts.ToArray() -join " | ")
 }
 
-function Invoke-MDWCompliance {
+function Write-MDWComplianceReport {
     [CmdletBinding()]
     param(
-        [string[]] $Arguments
+        [object] $Result
     )
 
-    $pluginSlug = Get-MDWComplianceArgumentValue -Arguments $Arguments -Name "-PluginSlug"
-    $pluginPath = Get-MDWComplianceArgumentValue -Arguments $Arguments -Name "-PluginPath"
-    $expectedPrefix = Get-MDWComplianceArgumentValue -Arguments $Arguments -Name "-prefix"
-
-    if ([string]::IsNullOrWhiteSpace($pluginSlug) -and $Arguments -and $Arguments.Count -gt 0) {
-        if ($Arguments[0] -notlike "-*") {
-            $pluginSlug = $Arguments[0]
-        }
-    }
-
-    Write-MDWHeader -Title "MDW Toolkit" -Subtitle "Compliance"
-
-    if ([string]::IsNullOrWhiteSpace($pluginSlug) -and [string]::IsNullOrWhiteSpace($pluginPath)) {
-        Write-MDWResult -Status "FAIL" -Message "Plugin slug or plugin path is required."
-        return
-    }
-
-    $result = Invoke-MDWComplianceService -PluginSlug $pluginSlug -PluginPath $pluginPath -ExpectedPrefix $expectedPrefix
-
     Write-MDWSection -Title "Scope"
-    Write-MDWInfoCard -Label "Plugin" -Value $result.PluginSlug
-    Write-MDWInfoCard -Label "Path" -Value $result.PluginPath
+    Write-MDWInfoCard -Label "Plugin" -Value $Result.PluginSlug
+    Write-MDWInfoCard -Label "Path" -Value $Result.PluginPath
 
-    if (-not [string]::IsNullOrWhiteSpace($result.ExpectedPrefix)) {
-        Write-MDWInfoCard -Label "Prefix" -Value $result.ExpectedPrefix
+    if (-not [string]::IsNullOrWhiteSpace($Result.ExpectedPrefix)) {
+        Write-MDWInfoCard -Label "Prefix" -Value $Result.ExpectedPrefix
     }
 
     Write-MDWSection -Title "Findings"
 
-    if (-not $result.Findings -or $result.Findings.Count -eq 0) {
+    if (-not $Result.Findings -or $Result.Findings.Count -eq 0) {
         Write-MDWStatus -Status "OK" -Message "No compliance findings."
     }
     else {
-        foreach ($finding in $result.Findings) {
+        foreach ($finding in $Result.Findings) {
             $status = "INFO"
 
             if ($finding.Status) {
@@ -112,18 +138,129 @@ function Invoke-MDWCompliance {
     }
 
     Write-MDWSection -Title "Summary"
-    Write-MDWInfoCard -Label "Failed" -Value $result.Failed
-    Write-MDWInfoCard -Label "Warnings" -Value $result.Warnings
+    Write-MDWInfoCard -Label "Failed" -Value $Result.Failed
+    Write-MDWInfoCard -Label "Warnings" -Value $Result.Warnings
 
-    if ($result.Failed -gt 0) {
-        Write-MDWResult -Status "FAIL" -Message ("Compliance failed with {0} findings." -f $result.Failed)
+    if ($Result.Failed -gt 0) {
+        Write-MDWResult -Status "FAIL" -Message ("Compliance failed with {0} findings." -f $Result.Failed)
         return
     }
 
-    if ($result.Warnings -gt 0) {
-        Write-MDWResult -Status "WARN" -Message ("Compliance passed with {0} warnings." -f $result.Warnings)
+    if ($Result.Warnings -gt 0) {
+        Write-MDWResult -Status "WARN" -Message ("Compliance passed with {0} warnings." -f $Result.Warnings)
         return
     }
 
     Write-MDWResult -Status "OK" -Message "Compliance passed."
+}
+
+function Write-MDWComplianceFixReport {
+    [CmdletBinding()]
+    param(
+        [object] $Result
+    )
+
+    Write-MDWSection -Title "Scope"
+    Write-MDWInfoCard -Label "Plugin" -Value $Result.PluginSlug
+    Write-MDWInfoCard -Label "Path" -Value $Result.PluginPath
+    Write-MDWInfoCard -Label "Prefix" -Value $Result.ExpectedPrefix
+    Write-MDWInfoCard -Label "Mode" -Value $(if ($Result.WhatIf) { "WhatIf" } else { "Apply" })
+
+    Write-MDWSection -Title "Backup"
+
+    if ($Result.WhatIf) {
+        Write-MDWStatus -Status "INFO" -Message "Dry run only. No backup created."
+    }
+    else {
+        Write-MDWStatus -Status "OK" -Message "Backup created before modifying files."
+        Write-MDWInfoCard -Label "Backup" -Value $Result.BackupPath
+    }
+
+    Write-MDWSection -Title "Changes"
+
+    if (-not $Result.ChangedFiles -or $Result.ChangedFiles.Count -eq 0) {
+        Write-MDWStatus -Status "OK" -Message "No unsafe prefixes require replacement."
+    }
+    else {
+        foreach ($change in $Result.ChangedFiles) {
+            $status = "OK"
+
+            if ($Result.WhatIf) {
+                $status = "INFO"
+            }
+
+            Write-MDWStatus -Status $status -Message ("{0} replacements in {1}" -f $change.ReplacementCount, $change.File)
+        }
+    }
+
+    Write-MDWSection -Title "Validation"
+    Write-MDWInfoCard -Label "Failed" -Value $Result.Validation.Failed
+    Write-MDWInfoCard -Label "Warnings" -Value $Result.Validation.Warnings
+
+    if ($Result.WhatIf) {
+        Write-MDWResult -Status "INFO" -Message ("Dry run complete. {0} replacements would be made." -f $Result.ReplacementCount)
+        return
+    }
+
+    if ($Result.Validation.Failed -gt 0) {
+        Write-MDWResult -Status "FAIL" -Message "Prefix fix completed, but validation still has failures."
+        return
+    }
+
+    if ($Result.Validation.Warnings -gt 0) {
+        Write-MDWResult -Status "WARN" -Message ("Prefix fix completed with {0} validation warnings." -f $Result.Validation.Warnings)
+        return
+    }
+
+    Write-MDWResult -Status "OK" -Message ("Prefix fix completed. {0} replacements applied." -f $Result.ReplacementCount)
+}
+
+function Invoke-MDWCompliance {
+    [CmdletBinding()]
+    param(
+        [string[]] $Arguments
+    )
+
+    $isFix = $false
+    $argumentOffset = 0
+
+    if ($Arguments -and $Arguments.Count -gt 0 -and $Arguments[0].ToLowerInvariant() -eq "fix") {
+        $isFix = $true
+        $argumentOffset = 1
+    }
+
+    $pluginSlug = Get-MDWComplianceArgumentValue -Arguments $Arguments -Name "-PluginSlug"
+    $pluginPath = Get-MDWComplianceArgumentValue -Arguments $Arguments -Name "-PluginPath"
+    $expectedPrefix = Get-MDWComplianceArgumentValue -Arguments $Arguments -Name "-prefix"
+    $whatIf = Test-MDWComplianceFlag -Arguments $Arguments -Name "-whatif"
+
+    if ([string]::IsNullOrWhiteSpace($pluginSlug)) {
+        $pluginSlug = Get-MDWCompliancePluginArgument -Arguments $Arguments -StartIndex $argumentOffset
+    }
+
+    Write-MDWHeader -Title "MDW Toolkit" -Subtitle $(if ($isFix) { "Compliance Fix" } else { "Compliance" })
+
+    if ([string]::IsNullOrWhiteSpace($pluginSlug) -and [string]::IsNullOrWhiteSpace($pluginPath)) {
+        Write-MDWResult -Status "FAIL" -Message "Plugin slug or plugin path is required."
+        return
+    }
+
+    if ($isFix) {
+        if ([string]::IsNullOrWhiteSpace($expectedPrefix)) {
+            Write-MDWResult -Status "FAIL" -Message "Prefix is required. Use: mdw compliance fix <plugin-slug> --prefix <prefix>"
+            return
+        }
+
+        $fixResult = Invoke-MDWComplianceFixService `
+            -PluginSlug $pluginSlug `
+            -PluginPath $pluginPath `
+            -ExpectedPrefix $expectedPrefix `
+            -WhatIf:$whatIf
+
+        Write-MDWComplianceFixReport -Result $fixResult
+        return
+    }
+
+    $result = Invoke-MDWComplianceService -PluginSlug $pluginSlug -PluginPath $pluginPath -ExpectedPrefix $expectedPrefix
+    Write-MDWComplianceReport -Result $result
 }

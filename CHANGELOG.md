@@ -13,6 +13,7 @@ The format of this changelog is based on Keep a Changelog and this project follo
 * Compliance Suite foundation.
 * Compliance command and shared compliance result object.
 * Compliance prefix validator for WordPress-safe identifiers.
+* Dry-run and backed-up compliance prefix fixer.
 * `mdw lint` command for PHP syntax checks.
 * `mdw validate` release readiness flow.
 * Command-specific help pages with `mdw help <command>`.
@@ -83,5 +84,6 @@ The format of this changelog is based on Keep a Changelog and this project follo
 * Build pipeline reliability.
 * Release pipeline reliability.
 * General production hardening.
+
 
 
