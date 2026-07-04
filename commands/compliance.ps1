@@ -193,6 +193,17 @@ function Write-MDWComplianceFixReport {
         }
     }
 
+    Write-MDWSection -Title "Skipped"
+
+    if (-not $Result.Skipped -or $Result.Skipped.Count -eq 0) {
+        Write-MDWStatus -Status "OK" -Message "No ambiguous findings skipped."
+    }
+    else {
+        foreach ($skip in $Result.Skipped) {
+            Write-MDWStatus -Status "WARN" -Message ("Skipped {0} at {1}:{2}. {3}" -f $skip.CurrentValue, $skip.File, $skip.Line, $skip.Reason)
+        }
+    }
+
     Write-MDWSection -Title "Validation"
     Write-MDWInfoCard -Label "Failed" -Value $Result.Validation.Failed
     Write-MDWInfoCard -Label "Warnings" -Value $Result.Validation.Warnings
@@ -251,12 +262,6 @@ function Invoke-MDWCompliance {
             return
         }
 
-        if (-not $whatIf) {
-            Write-MDWSection -Title "Result"
-            Write-Host "  [FAIL] Prefix fixer apply mode is temporarily disabled pending semantic safety patch." -ForegroundColor Red
-            return
-        }
-
         $fixResult = Invoke-MDWComplianceFixService `
             -PluginSlug $pluginSlug `
             -PluginPath $pluginPath `
@@ -270,5 +275,6 @@ function Invoke-MDWCompliance {
     $result = Invoke-MDWComplianceService -PluginSlug $pluginSlug -PluginPath $pluginPath -ExpectedPrefix $expectedPrefix
     Write-MDWComplianceReport -Result $result
 }
+
 
 

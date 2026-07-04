@@ -56,8 +56,7 @@ Paths are managed through `mdw.json`.
 - WordPress compliance foundation checks
 - Compliance prefix validation for WordPress-safe identifiers
 - Prefix fixer dry-run for PHP and known WordPress identifiers
-- Prefix fixer apply mode is temporarily disabled pending semantic safety patch
-- WP-CLI WordPress Plugin Check integration
+- Semantic-safe prefix fixer apply mode for validator-confirmed identifiers`r`n- WP-CLI WordPress Plugin Check integration
 - Build pipeline with production exclusions
 - ZIP generation with correct `plugin-slug/` package root
 - Release preparation pipeline
@@ -218,7 +217,5 @@ MDW Toolkit is released under the MIT License. See `LICENSE` for details.
 
 
 
-## Compliance Prefix Fixer Safety
-
-Prefix fixer apply mode is temporarily disabled pending semantic safety patch. Use `mdw compliance fix <plugin> --prefix <prefix> --whatif` for dry-run reports only.
+## Compliance Prefix Fixer Safety`r`n`r`nPrefix fixer apply mode only changes validator-confirmed PHP and known WordPress identifiers. It does not rename files, folders, plugin slugs or text domains, and it does not rewrite arbitrary strings, CSS/HTML classes, JS selectors or translation strings.`r`n
 

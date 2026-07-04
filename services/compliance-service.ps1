@@ -81,10 +81,12 @@ function New-MDWComplianceFixResult {
         [bool] $WhatIf,
         [string] $BackupPath,
         [object[]] $Changes,
+        [object[]] $Skipped,
         [object] $Validation
     )
 
     $safeChanges = @($Changes)
+    $safeSkipped = @($Skipped)
     $replacementCount = 0
 
     foreach ($change in $safeChanges) {
@@ -98,6 +100,8 @@ function New-MDWComplianceFixResult {
         ChangedFiles      = @($safeChanges)
         ChangedFileCount  = $safeChanges.Count
         ReplacementCount  = $replacementCount
+        Skipped           = @($safeSkipped)
+        SkippedCount      = $safeSkipped.Count
         Validation        = $Validation
         PluginSlug        = $PluginSlug
         PluginPath        = $PluginPath
@@ -241,7 +245,6 @@ function Invoke-MDWComplianceFixService {
         -WhatIf ([bool] $WhatIf) `
         -BackupPath $backupPath `
         -Changes @($fixResult.ChangedFiles) `
+        -Skipped @($fixResult.Skipped) `
         -Validation $validation
 }
-
-

@@ -84,6 +84,25 @@ function Get-MDWComplianceFixReplacementValue {
     return ("{0}{1}" -f $prefix, $suffix)
 }
 
+function Get-MDWComplianceFixKind {
+    [CmdletBinding()]
+    param(
+        [object] $Finding
+    )
+
+    $message = [string] $Finding.Message
+
+    if ($message -match ' for (.+)\.$') {
+        return $matches[1]
+    }
+
+    if ($message -match ' in (.+)\.$') {
+        return $matches[1]
+    }
+
+    return "unknown"
+}
+
 function Get-MDWCompliancePrefixFixPlan {
     [CmdletBinding()]
     param(
@@ -98,6 +117,7 @@ function Get-MDWCompliancePrefixFixPlan {
         -ExpectedPrefix $ExpectedPrefix
 
     $plan = New-Object System.Collections.Generic.List[object]
+    $skipped = New-Object System.Collections.Generic.List[object]
     $seen = @{}
 
     foreach ($finding in @($prefixResult.Findings)) {
@@ -105,25 +125,45 @@ function Get-MDWCompliancePrefixFixPlan {
             continue
         }
 
+        $skipReason = $null
+
         if ([string]::IsNullOrWhiteSpace([string] $finding.CurrentValue)) {
-            continue
+            $skipReason = "Missing current value metadata."
+        }
+        elseif ([string]::IsNullOrWhiteSpace([string] $finding.File) -or -not (Test-MDWComplianceFixablePhpFile -Path $finding.File)) {
+            $skipReason = "File is not a fixable PHP source file."
+        }
+        elseif ($null -eq $finding.Line -or [int] $finding.Line -le 0) {
+            $skipReason = "Missing line metadata."
+        }
+        elseif ($finding.CurrentValue -eq $PluginSlug) {
+            $skipReason = "Plugin slug is never modified."
         }
 
-        if ([string]::IsNullOrWhiteSpace([string] $finding.File) -or -not (Test-MDWComplianceFixablePhpFile -Path $finding.File)) {
-            continue
-        }
-
-        if ($finding.CurrentValue -eq $PluginSlug) {
+        if ($null -ne $skipReason) {
+            $skipped.Add(@{
+                File         = $finding.File
+                Line         = $finding.Line
+                CurrentValue = $finding.CurrentValue
+                Reason       = $skipReason
+            })
             continue
         }
 
         $replacement = Get-MDWComplianceFixReplacementValue -CurrentValue $finding.CurrentValue -RecommendedPrefix $ExpectedPrefix
 
         if ([string]::IsNullOrWhiteSpace($replacement) -or $replacement -eq $finding.CurrentValue) {
+            $skipped.Add(@{
+                File         = $finding.File
+                Line         = $finding.Line
+                CurrentValue = $finding.CurrentValue
+                Reason       = "Replacement could not be resolved safely."
+            })
             continue
         }
 
-        $key = ("{0}|{1}|{2}|{3}" -f $finding.File, $finding.Line, $finding.CurrentValue, $replacement)
+        $kind = Get-MDWComplianceFixKind -Finding $finding
+        $key = ("{0}|{1}|{2}|{3}|{4}" -f $finding.File, $finding.Line, $finding.CurrentValue, $replacement, $kind)
 
         if ($seen.ContainsKey($key)) {
             continue
@@ -136,10 +176,44 @@ function Get-MDWCompliancePrefixFixPlan {
             RecommendedValue = $replacement
             Rule             = $finding.Rule
             Line             = $finding.Line
+            Kind             = $kind
         })
     }
 
-    return @($plan.ToArray())
+    return @{
+        Items   = @($plan.ToArray())
+        Skipped = @($skipped.ToArray())
+    }
+}
+
+function Convert-MDWComplianceRegexReplacement {
+    [CmdletBinding()]
+    param(
+        [string] $LineText,
+        [string] $Pattern,
+        [string] $RecommendedValue
+    )
+
+    $regex = New-Object System.Text.RegularExpressions.Regex($Pattern)
+    $replaced = $false
+    $result = $regex.Replace($LineText, [System.Text.RegularExpressions.MatchEvaluator] {
+        param($match)
+
+        if ($replaced) {
+            return $match.Value
+        }
+
+        $script:MDW_PREFIX_FIX_REPLACED = $true
+        return ("{0}{1}{2}" -f $match.Groups[1].Value, $RecommendedValue, $match.Groups[2].Value)
+    }, 1)
+
+    $replaced = [bool] $script:MDW_PREFIX_FIX_REPLACED
+    $script:MDW_PREFIX_FIX_REPLACED = $false
+
+    return @{
+        Text     = $result
+        Replaced = $replaced
+    }
 }
 
 function Set-MDWComplianceTokenOnLine {
@@ -147,11 +221,88 @@ function Set-MDWComplianceTokenOnLine {
     param(
         [string] $LineText,
         [string] $CurrentValue,
-        [string] $RecommendedValue
+        [string] $RecommendedValue,
+        [string] $Kind
     )
 
-    $pattern = [regex]::Escape($CurrentValue)
-    return [regex]::Replace($LineText, $pattern, [System.Text.RegularExpressions.MatchEvaluator] { param($match) [string] $RecommendedValue }, 1)
+    $value = [regex]::Escape($CurrentValue)
+    $patterns = @()
+
+    switch ($Kind) {
+        "PHP class" {
+            $patterns = @("(\b(?:class|interface|trait)\s+)${value}(\b)")
+        }
+        "PHP function" {
+            $patterns = @("(\bfunction\s+)${value}(\s*\()")
+        }
+        "constant" {
+            $patterns = @(
+                "(\bconst\s+)${value}(\b)",
+                "(\bdefine\s*\(\s*['\""'])${value}(['\""'])"
+            )
+        }
+        "option name" {
+            $patterns = @("(\b(?:get_option|update_option|add_option|delete_option)\s*\(\s*['\""'])${value}(['\""'])")
+        }
+        "register_setting group" {
+            $patterns = @("(\bregister_setting\s*\(\s*['\""'])${value}(['\""'])")
+        }
+        "register_setting option" {
+            $patterns = @("(\bregister_setting\s*\(\s*['\""'][^'\""']+['\""']\s*,\s*['\""'])${value}(['\""'])")
+        }
+        "wp_ajax hook" {
+            $patterns = @("(\badd_action\s*\(\s*['\""']wp_ajax_)${value}(['\""'])")
+        }
+        "wp_ajax_nopriv hook" {
+            $patterns = @("(\badd_action\s*\(\s*['\""']wp_ajax_nopriv_)${value}(['\""'])")
+        }
+        "nonce action" {
+            $patterns = @("(\b(?:wp_create_nonce|check_admin_referer|check_ajax_referer)\s*\(\s*['\""'])${value}(['\""'])")
+        }
+        "script/style handle" {
+            $patterns = @("(\b(?:wp_enqueue_script|wp_register_script|wp_enqueue_style|wp_register_style)\s*\(\s*['\""'])${value}(['\""'])")
+        }
+        "localized object" {
+            $patterns = @("(\bwp_localize_script\s*\(\s*[^,]+,\s*['\""'])${value}(['\""'])")
+        }
+        "meta key" {
+            $patterns = @("(\b(?:get_post_meta|update_post_meta|add_post_meta|delete_post_meta|get_user_meta|update_user_meta|add_user_meta|delete_user_meta)\s*\(\s*[^,]+,\s*['\""'])${value}(['\""'])")
+        }
+        "global variable" {
+            $patterns = @(
+                "(\`$GLOBALS\s*\[\s*['\""'])${value}(['\""']\s*\])",
+                "(\bglobal\s+\$)${value}(\b)"
+            )
+        }
+        default {
+            return @{ Text = $LineText; Replaced = $false; Reason = "Unsupported semantic context: $Kind" }
+        }
+    }
+
+    foreach ($pattern in $patterns) {
+        $result = Convert-MDWComplianceRegexReplacement -LineText $LineText -Pattern $pattern -RecommendedValue $RecommendedValue
+
+        if ($result.Replaced) {
+            return @{ Text = $result.Text; Replaced = $true; Reason = $null }
+        }
+    }
+
+    return @{ Text = $LineText; Replaced = $false; Reason = "Exact semantic token was not found on the reported line." }
+}
+
+function Get-MDWComplianceFileEncoding {
+    [CmdletBinding()]
+    param(
+        [string] $Path
+    )
+
+    $bytes = [System.IO.File]::ReadAllBytes($Path)
+
+    if ($bytes.Length -ge 3 -and $bytes[0] -eq 239 -and $bytes[1] -eq 187 -and $bytes[2] -eq 191) {
+        return New-Object System.Text.UTF8Encoding($true)
+    }
+
+    return New-Object System.Text.UTF8Encoding($false)
 }
 
 function Invoke-MDWCompliancePrefixFixer {
@@ -163,15 +314,25 @@ function Invoke-MDWCompliancePrefixFixer {
         [switch] $WhatIf
     )
 
-    if (-not $WhatIf) {
-        throw "Prefix fixer apply mode is temporarily disabled pending semantic safety patch."
+    $fixPlan = Get-MDWCompliancePrefixFixPlan -PluginSlug $PluginSlug -PluginPath $PluginPath -ExpectedPrefix $ExpectedPrefix
+    $plan = @($fixPlan["Items"])
+    $skipped = New-Object System.Collections.Generic.List[object]
+
+    foreach ($skip in @($fixPlan["Skipped"])) {
+        $skipped.Add($skip)
     }
 
-    $plan = @(Get-MDWCompliancePrefixFixPlan -PluginSlug $PluginSlug -PluginPath $PluginPath -ExpectedPrefix $ExpectedPrefix)
     $changes = New-Object System.Collections.Generic.List[object]
     $files = @($plan | ForEach-Object { $_["File"] } | Sort-Object -Unique)
 
     foreach ($file in $files) {
+        $originalText = [System.IO.File]::ReadAllText($file)
+        $lineEnding = "`n"
+
+        if ($originalText -match "`r`n") {
+            $lineEnding = "`r`n"
+        }
+
         $lines = @([System.IO.File]::ReadAllLines($file))
         $fileReplacementCount = 0
         $filePlan = @($plan | Where-Object { $_["File"] -eq $file } | Sort-Object { [int] $_["Line"] })
@@ -180,21 +341,42 @@ function Invoke-MDWCompliancePrefixFixer {
             $lineNumber = [int] $item["Line"]
 
             if ($lineNumber -le 0 -or $lineNumber -gt $lines.Count) {
+                $skipped.Add(@{
+                    File         = $file
+                    Line         = $lineNumber
+                    CurrentValue = $item["CurrentValue"]
+                    Reason       = "Reported line is outside file bounds."
+                })
                 continue
             }
 
             $before = $lines[$lineNumber - 1]
-            $after = Set-MDWComplianceTokenOnLine `
+            $result = Set-MDWComplianceTokenOnLine `
                 -LineText $before `
                 -CurrentValue ([string] $item["CurrentValue"]) `
-                -RecommendedValue ([string] $item["RecommendedValue"])
+                -RecommendedValue ([string] $item["RecommendedValue"]) `
+                -Kind ([string] $item["Kind"])
 
-            if ($after -ne $before) {
+            if ($result.Replaced) {
+                $lines[$lineNumber - 1] = $result.Text
                 $fileReplacementCount++
+            }
+            else {
+                $skipped.Add(@{
+                    File         = $file
+                    Line         = $lineNumber
+                    CurrentValue = $item["CurrentValue"]
+                    Reason       = $result.Reason
+                })
             }
         }
 
         if ($fileReplacementCount -gt 0) {
+            if (-not $WhatIf) {
+                $encoding = Get-MDWComplianceFileEncoding -Path $file
+                [System.IO.File]::WriteAllText($file, ($lines -join $lineEnding), $encoding)
+            }
+
             $changes.Add(@{
                 File             = $file
                 ReplacementCount = $fileReplacementCount
@@ -212,6 +394,10 @@ function Invoke-MDWCompliancePrefixFixer {
     return @{
         ChangedFiles     = @($changes.ToArray())
         ReplacementCount = $replacementCount
+        Skipped          = @($skipped.ToArray())
+        SkippedCount     = $skipped.Count
         WhatIf           = [bool] $WhatIf
     }
 }
+
+
