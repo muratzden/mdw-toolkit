@@ -1,4 +1,4 @@
-﻿$tests = New-Object System.Collections.Generic.List[object]
+$tests = New-Object System.Collections.Generic.List[object]
 
 $services = @(
     @{ Name = "Build"; EntryPoint = "Invoke-MDWBuildService" }
@@ -7,6 +7,7 @@ $services = @(
     @{ Name = "Doctor"; EntryPoint = "Invoke-MDWDoctorService" }
     @{ Name = "Git"; EntryPoint = "Get-MDWGitStatus" }
     @{ Name = "Lint"; EntryPoint = "Invoke-MDWLintService" }
+    @{ Name = "Compliance"; EntryPoint = "Invoke-MDWComplianceService" }
     @{ Name = "Validate"; EntryPoint = "Invoke-MDWValidateService" }
     @{ Name = "Output"; EntryPoint = "Write-MDWTitle" }
     @{ Name = "LocalWP Service"; EntryPoint = "Get-MDWLocalWPReport" }

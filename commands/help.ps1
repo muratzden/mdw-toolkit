@@ -1,4 +1,4 @@
-﻿<#
+<#
 MDW Help Command
 PowerShell 5.1 / 7 compatible
 #>
@@ -15,6 +15,7 @@ function Get-MDWHelpPage {
         build = @{ Description = "Build a production-ready plugin copy."; Usage = "mdw build <plugin-slug>"; Parameters = @("plugin-slug: Plugin folder name in the workspace."); Examples = @("mdw build my-plugin") }
         doctor = @{ Description = "Inspect the local development environment."; Usage = "mdw doctor"; Parameters = @("None"); Examples = @("mdw doctor") }
         validate = @{ Description = "Validate mdw.json, plugin headers, readme.txt and Git status."; Usage = "mdw validate <plugin-slug>"; Parameters = @("plugin-slug: Optional plugin folder name."); Examples = @("mdw validate my-plugin") }
+        compliance = @{ Description = "Run WordPress compliance and prefix checks."; Usage = "mdw compliance <plugin-slug> [--prefix <prefix>]"; Parameters = @("plugin-slug: Plugin folder name.", "-PluginSlug: Named plugin slug.", "-PluginPath: Direct plugin path.", "--prefix: Expected plugin-specific prefix."); Examples = @("mdw compliance my-plugin", "mdw compliance my-plugin --prefix craftcommercekit_reviewflow_", "mdw compliance -PluginPath C:\Workspace\Plugins\my-plugin") }
         "plugin-check" = @{ Description = "Run MDW internal checks or WP-CLI Plugin Check when a WordPress path is supplied."; Usage = "mdw plugin-check <plugin-slug> [-WordPressPath <path>]"; Parameters = @("plugin-slug: Plugin folder name.", "-PluginSlug: Named plugin slug.", "-WordPressPath: WordPress test installation path."); Examples = @("mdw plugin-check my-plugin", "mdw plugin-check -PluginSlug my-plugin -WordPressPath C:\laragon\www\site") }
         check = @{ Description = "Run quick internal plugin structure checks."; Usage = "mdw check <plugin-slug>"; Parameters = @("plugin-slug: Plugin folder name."); Examples = @("mdw check my-plugin") }
         lint = @{ Description = "Run php -l across plugin PHP files."; Usage = "mdw lint <plugin-slug> or mdw lint -PluginPath <path>"; Parameters = @("plugin-slug: Plugin folder name.", "-PluginPath: Direct plugin path."); Examples = @("mdw lint my-plugin", "mdw lint -PluginPath C:\Workspace\Plugins\my-plugin") }
@@ -84,6 +85,7 @@ function Invoke-MDWHelp {
 
     $commonCommands = @(
         @{ Name = "mdw doctor"; Description = "Check environment" }
+        @{ Name = "mdw compliance <plugin>"; Description = "Compliance checks" }
         @{ Name = "mdw validate <plugin>"; Description = "Release readiness" }
         @{ Name = "mdw build <plugin>"; Description = "Build package" }
         @{ Name = "mdw release <plugin>"; Description = "Release plugin" }
@@ -123,7 +125,7 @@ function Invoke-MDWHelp {
 
     Write-MDWSection -Title "Getting Started"
     Write-MDWExample -Command "mdw doctor"
-    Write-MDWExample -Command "mdw help build"
+    Write-MDWExample -Command "mdw help compliance"
 
     Write-MDWBlank
 }

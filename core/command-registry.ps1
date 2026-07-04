@@ -1,4 +1,4 @@
-﻿<#
+<#
 MDW Toolkit Command Registry
 PowerShell 5.1 / 7 compatible
 #>
@@ -19,6 +19,7 @@ function Get-MDWCommandRegistry {
         check = @{ Script = "commands/check.ps1"; EntryPoint = "Invoke-MDWCheck"; Description = "Run quick plugin checks." }
         lint = @{ Script = "commands/lint.ps1"; EntryPoint = "Invoke-MDWLint"; Description = "Run PHP syntax lint for a plugin." }
         "plugin-check" = @{ Script = "commands/plugin-check.ps1"; EntryPoint = "Invoke-MDWPluginCheckCommand"; Description = "Run internal or WP-CLI plugin validation." }
+        compliance = @{ Script = "commands/compliance.ps1"; EntryPoint = "Invoke-MDWCompliance"; Description = "Run WordPress compliance checks." }
         validate = @{ Script = "commands/validate.ps1"; EntryPoint = "Invoke-MDWValidate"; Description = "Run release readiness validation checks." }
         build = @{ Script = "commands/build.ps1"; EntryPoint = "Invoke-MDWBuild"; Description = "Build current plugin." }
         zip = @{ Script = "commands/zip.ps1"; EntryPoint = "Invoke-MDWZip"; Description = "Create release ZIP package." }

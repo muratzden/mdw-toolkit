@@ -1,8 +1,8 @@
-﻿# MDW Toolkit
+# MDW Toolkit
 
 Professional WordPress CLI Toolkit for building, validating, testing and releasing WordPress plugins.
 
-MDW Toolkit is a production-ready PowerShell CLI for a standardized WordPress plugin workspace. It helps developers create plugins, validate project structure, run PHP lint checks, run internal and WP-CLI plugin checks, build production packages, create ZIP releases, manage backups, inspect Git state and work with LocalWP.
+MDW Toolkit is a production-ready PowerShell CLI for a standardized WordPress plugin workspace. It helps developers create plugins, validate project structure, run PHP lint checks, run compliance checks, run internal and WP-CLI plugin checks, build production packages, create ZIP releases, manage backups, inspect Git state and work with LocalWP.
 
 ## Current Release
 
@@ -53,6 +53,8 @@ Paths are managed through `mdw.json`.
 - Plugin structure validation
 - PHP syntax linting with `php -l`
 - Internal plugin check suite
+- WordPress compliance foundation checks
+- Compliance prefix validation for WordPress-safe identifiers
 - WP-CLI WordPress Plugin Check integration
 - Build pipeline with production exclusions
 - ZIP generation with correct `plugin-slug/` package root
@@ -75,6 +77,7 @@ Paths are managed through `mdw.json`.
 | `mdw check <plugin>` | Run quick internal plugin checks |
 | `mdw lint <plugin>` | Run PHP syntax lint checks |
 | `mdw plugin-check <plugin>` | Run internal plugin check |
+| `mdw compliance <plugin>` | Run WordPress compliance foundation checks |
 | `mdw plugin-check -PluginSlug <plugin> -WordPressPath <path>` | Run WP-CLI Plugin Check in a test WordPress install |
 | `mdw validate <plugin>` | Validate mdw.json, headers, readme and Git state |
 | `mdw build <plugin>` | Build production plugin files |
@@ -97,6 +100,8 @@ mdw new plugin my-plugin
 mdw validate my-plugin
 mdw lint my-plugin
 mdw plugin-check my-plugin
+mdw compliance my-plugin
+mdw compliance my-plugin --prefix craftcommercekit_reviewflow_
 mdw build my-plugin
 mdw zip my-plugin
 mdw release my-plugin
@@ -205,3 +210,5 @@ mdw test
 ## License
 
 MDW Toolkit is released under the MIT License. See `LICENSE` for details.
+
+

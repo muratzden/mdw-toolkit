@@ -77,4 +77,14 @@ $tests.Add(@{
     Message = ""
 })
 
+$complianceResult = Invoke-MDWComplianceService -PluginSlug "valid-plugin" -PluginPath $validPlugin
+$missingComplianceResult = Invoke-MDWComplianceService -PluginSlug "missing-header" -PluginPath $missingHeader
+
+$tests.Add(@{
+    Name = "Compliance"
+    Passed = ($complianceResult.Findings.Count -gt 0) -and (-not $missingComplianceResult.Passed) -and ($missingComplianceResult.Failed -gt 0)
+    Duration = 0
+    Message = ""
+})
+
 return @($tests.ToArray())
