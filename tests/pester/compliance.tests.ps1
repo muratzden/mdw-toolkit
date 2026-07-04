@@ -154,7 +154,7 @@ Describe "MDW Compliance Prefix Fixer" {
     It "dry-run reports replacements without modifying files" {
         $pluginPath = New-MDWCompliancePesterPlugin -Name "prefix-fix-dry" -PhpCode @"
 <?php
-function abc_run() {}
+function CCK_RF_run() {}
 "@
         $file = Join-Path $pluginPath "prefix-fix-dry.php"
 
@@ -164,7 +164,7 @@ function abc_run() {}
 
             ($result.ReplacementCount -gt 0) | Should Be $true
             $result.WhatIf | Should Be $true
-            ($content -match "abc_run") | Should Be $true
+            ($content -match "CCK_RF_run") | Should Be $true
         }
         finally {
             Remove-MDWCompliancePesterPlugin -Path $pluginPath
@@ -174,7 +174,7 @@ function abc_run() {}
     It "apply mode is enabled and creates a backup" {
         $pluginPath = New-MDWCompliancePesterPlugin -Name "prefix-fix-apply" -PhpCode @"
 <?php
-function abc_run() {}
+function CCK_RF_run() {}
 "@
         $file = Join-Path $pluginPath "prefix-fix-apply.php"
 
@@ -186,7 +186,7 @@ function abc_run() {}
             $result.WhatIf | Should Be $false
             (Test-Path -LiteralPath $result.BackupPath -PathType Container) | Should Be $true
             ($content -match "craftcommercekit_reviewflow_run") | Should Be $true
-            ($content -match "abc_run") | Should Be $false
+            ($content -match "CCK_RF_run") | Should Be $false
         }
         finally {
             Remove-MDWCompliancePesterPlugin -Path $pluginPath
@@ -199,14 +199,14 @@ function abc_run() {}
 /*
 Plugin Name: Semantic Safety
 Text Domain: prefix-fix-semantic
-abc_run comment should remain.
+CCK_RF_run comment should remain.
 */
-require_once __DIR__ . '/abc-file.php';
-echo '<div class="abc-card" id="abc-id" data-abc="yes"></div>';
-`$selector = '.abc-card #abc-id [data-abc="yes"]';
-__('abc translation string', 'prefix-fix-semantic');
-function abc_run() {}
-update_option('abc_option', 'yes');
+require_once __DIR__ . '/CCK_RF-file.php';
+echo '<div class="CCK_RF-card" id="CCK_RF-id" data-CCK_RF="yes"></div>';
+`$selector = '.CCK_RF-card #CCK_RF-id [data-CCK_RF="yes"]';
+__('CCK_RF translation string', 'prefix-fix-semantic');
+function CCK_RF_run() {}
+update_option('CCK_RF_option', 'yes');
 "@
         $file = Join-Path $pluginPath "prefix-fix-semantic.php"
 
@@ -217,12 +217,12 @@ update_option('abc_option', 'yes');
             $result.ReplacementCount | Should Be 2
             ($content -match "function craftcommercekit_reviewflow_run") | Should Be $true
             ($content -match "update_option\('craftcommercekit_reviewflow_option'") | Should Be $true
-            ($content -match "abc_run comment should remain") | Should Be $true
-            ($content -match "abc-file.php") | Should Be $true
-            ($content -match "abc-card") | Should Be $true
-            ($content -match "abc-id") | Should Be $true
-            ($content -match "data-abc") | Should Be $true
-            ($content -match "abc translation string") | Should Be $true
+            ($content -match "CCK_RF_run comment should remain") | Should Be $true
+            ($content -match "CCK_RF-file.php") | Should Be $true
+            ($content -match "CCK_RF-card") | Should Be $true
+            ($content -match "CCK_RF-id") | Should Be $true
+            ($content -match "data-CCK_RF") | Should Be $true
+            ($content -match "CCK_RF translation string") | Should Be $true
             ($content -match "Text Domain: prefix-fix-semantic") | Should Be $true
         }
         finally {
@@ -233,7 +233,7 @@ update_option('abc_option', 'yes');
     It "does not rename files or folders" {
         $pluginPath = New-MDWCompliancePesterPlugin -Name "prefix-fix-name" -PhpCode @"
 <?php
-function abc_main() {}
+function CCK_RF_main() {}
 "@
         $file = Join-Path $pluginPath "prefix-fix-name.php"
 
@@ -250,18 +250,18 @@ function abc_main() {}
     It "does not include vendor files in apply plan" {
         $pluginPath = New-MDWCompliancePesterPlugin -Name "prefix-fix-vendor" -PhpCode @"
 <?php
-function abc_main() {}
+function CCK_RF_main() {}
 "@
         $vendorPath = Join-Path $pluginPath "vendor"
         New-Item -ItemType Directory -Path $vendorPath -Force | Out-Null
         $vendorFile = Join-Path $vendorPath "third-party.php"
-        Set-Content -LiteralPath $vendorFile -Value "<?php`nfunction abc_vendor() {}" -Encoding ASCII
+        Set-Content -LiteralPath $vendorFile -Value "<?php`nfunction CCK_RF_vendor() {}" -Encoding ASCII
 
         try {
             $result = Invoke-MDWComplianceFixService -PluginSlug "prefix-fix-vendor" -PluginPath $pluginPath -ExpectedPrefix "craftcommercekit_reviewflow_"
             $vendorContent = Get-Content -LiteralPath $vendorFile -Raw
             $result.ReplacementCount | Should Be 1
-            ($vendorContent -match "abc_vendor") | Should Be $true
+            ($vendorContent -match "CCK_RF_vendor") | Should Be $true
         }
         finally {
             Remove-MDWCompliancePesterPlugin -Path $pluginPath
@@ -271,15 +271,15 @@ function abc_main() {}
     It "does not replace partial substrings inside unrelated values" {
         $pluginPath = New-MDWCompliancePesterPlugin -Name "prefix-fix-partial" -PhpCode @"
 <?php
-`$value = 'prefix abc_run suffix';
-function abc_run() {}
+`$value = 'prefix CCK_RF_run suffix';
+function CCK_RF_run() {}
 "@
         $file = Join-Path $pluginPath "prefix-fix-partial.php"
 
         try {
             Invoke-MDWComplianceFixService -PluginSlug "prefix-fix-partial" -PluginPath $pluginPath -ExpectedPrefix "craftcommercekit_reviewflow_" | Out-Null
             $content = Get-Content -LiteralPath $file -Raw
-            ($content -match "prefix abc_run suffix") | Should Be $true
+            ($content -match "prefix CCK_RF_run suffix") | Should Be $true
             ($content -match "function craftcommercekit_reviewflow_run") | Should Be $true
         }
         finally {
@@ -287,3 +287,5 @@ function abc_run() {}
         }
     }
 }
+
+

@@ -41,6 +41,9 @@ function Convert-MDWCompliancePrefixToPascalPrefix {
         if ($part -eq "craftcommercekit") {
             $converted.Add("CraftCommerceKit")
         }
+        elseif ($part -eq "reviewflow") {
+            $converted.Add("ReviewFlow")
+        }
         else {
             $converted.Add($part.Substring(0, 1).ToUpperInvariant() + $part.Substring(1).ToLowerInvariant())
         }
@@ -53,7 +56,8 @@ function Get-MDWComplianceFixReplacementValue {
     [CmdletBinding()]
     param(
         [string] $CurrentValue,
-        [string] $RecommendedPrefix
+        [string] $RecommendedPrefix,
+        [string] $Kind
     )
 
     if ([string]::IsNullOrWhiteSpace($CurrentValue) -or [string]::IsNullOrWhiteSpace($RecommendedPrefix)) {
@@ -61,6 +65,13 @@ function Get-MDWComplianceFixReplacementValue {
     }
 
     $candidate = Get-MDWCompliancePrefixCandidate -Value $CurrentValue
+
+    if ($CurrentValue.StartsWith("CCK_RF_", [System.StringComparison]::OrdinalIgnoreCase)) {
+        $candidate = $CurrentValue.Substring(0, 7)
+    }
+    elseif ($CurrentValue.Equals("CCK_RF", [System.StringComparison]::OrdinalIgnoreCase)) {
+        $candidate = $CurrentValue
+    }
 
     if ([string]::IsNullOrWhiteSpace($candidate)) {
         return $RecommendedPrefix
@@ -72,18 +83,22 @@ function Get-MDWComplianceFixReplacementValue {
         $suffix = $CurrentValue.Substring($candidate.Length)
     }
 
-    $prefix = $RecommendedPrefix
+    switch ($Kind) {
+        "constant" {
+            return ("{0}{1}" -f $RecommendedPrefix.ToUpperInvariant(), $suffix.ToUpperInvariant())
+        }
+        "PHP class" {
+            return ("{0}{1}" -f (Convert-MDWCompliancePrefixToPascalPrefix -Prefix $RecommendedPrefix), $suffix)
+        }
+        default {
+            if ($CurrentValue.Equals("CCK_RF", [System.StringComparison]::OrdinalIgnoreCase)) {
+                return $RecommendedPrefix.TrimEnd("_".ToCharArray())
+            }
 
-    if ($CurrentValue -cmatch '^[A-Z0-9_]+$') {
-        $prefix = $RecommendedPrefix.ToUpperInvariant()
+            return ("{0}{1}" -f $RecommendedPrefix.ToLowerInvariant(), $suffix)
+        }
     }
-    elseif ($CurrentValue -cmatch '^[A-Z][A-Za-z0-9_]*$') {
-        $prefix = Convert-MDWCompliancePrefixToPascalPrefix -Prefix $RecommendedPrefix
-    }
-
-    return ("{0}{1}" -f $prefix, $suffix)
 }
-
 function Get-MDWComplianceFixKind {
     [CmdletBinding()]
     param(
@@ -101,6 +116,22 @@ function Get-MDWComplianceFixKind {
     }
 
     return "unknown"
+}
+
+function Add-MDWComplianceSkippedFix {
+    [CmdletBinding()]
+    param(
+        [System.Collections.Generic.List[object]] $Skipped,
+        [object] $Finding,
+        [string] $Reason
+    )
+
+    $Skipped.Add(@{
+        File         = $Finding.File
+        Line         = $Finding.Line
+        CurrentValue = $Finding.CurrentValue
+        Reason       = $Reason
+    })
 }
 
 function Get-MDWCompliancePrefixFixPlan {
@@ -121,48 +152,54 @@ function Get-MDWCompliancePrefixFixPlan {
     $seen = @{}
 
     foreach ($finding in @($prefixResult.Findings)) {
-        if ($finding.Status -ne "FAIL" -and $finding.Status -ne "WARN") {
+        if ($finding.Status -ne "FAIL") {
             continue
         }
-
-        $skipReason = $null
 
         if ([string]::IsNullOrWhiteSpace([string] $finding.CurrentValue)) {
-            $skipReason = "Missing current value metadata."
-        }
-        elseif ([string]::IsNullOrWhiteSpace([string] $finding.File) -or -not (Test-MDWComplianceFixablePhpFile -Path $finding.File)) {
-            $skipReason = "File is not a fixable PHP source file."
-        }
-        elseif ($null -eq $finding.Line -or [int] $finding.Line -le 0) {
-            $skipReason = "Missing line metadata."
-        }
-        elseif ($finding.CurrentValue -eq $PluginSlug) {
-            $skipReason = "Plugin slug is never modified."
-        }
-
-        if ($null -ne $skipReason) {
-            $skipped.Add(@{
-                File         = $finding.File
-                Line         = $finding.Line
-                CurrentValue = $finding.CurrentValue
-                Reason       = $skipReason
-            })
+            Add-MDWComplianceSkippedFix -Skipped $skipped -Finding $finding -Reason "Missing current value metadata."
             continue
         }
 
-        $replacement = Get-MDWComplianceFixReplacementValue -CurrentValue $finding.CurrentValue -RecommendedPrefix $ExpectedPrefix
+        if ([string]::IsNullOrWhiteSpace([string] $finding.File) -or -not (Test-MDWComplianceFixablePhpFile -Path $finding.File)) {
+            Add-MDWComplianceSkippedFix -Skipped $skipped -Finding $finding -Reason "File is not a fixable PHP source file."
+            continue
+        }
 
-        if ([string]::IsNullOrWhiteSpace($replacement) -or $replacement -eq $finding.CurrentValue) {
-            $skipped.Add(@{
-                File         = $finding.File
-                Line         = $finding.Line
-                CurrentValue = $finding.CurrentValue
-                Reason       = "Replacement could not be resolved safely."
-            })
+        if ($null -eq $finding.Line -or [int] $finding.Line -le 0) {
+            Add-MDWComplianceSkippedFix -Skipped $skipped -Finding $finding -Reason "Missing line metadata."
+            continue
+        }
+
+        if ($finding.CurrentValue -eq $PluginSlug) {
+            Add-MDWComplianceSkippedFix -Skipped $skipped -Finding $finding -Reason "Plugin slug is never modified."
+            continue
+        }
+
+        if ($finding.CurrentValue -like "__*") {
+            Add-MDWComplianceSkippedFix -Skipped $skipped -Finding $finding -Reason "Magic and private underscore identifiers are skipped."
             continue
         }
 
         $kind = Get-MDWComplianceFixKind -Finding $finding
+
+        if ($kind -eq "PHP function" -and $finding.Rule -eq "Prefix.TooShort" -and $finding.CurrentValue -notlike "CCK_*") {
+            Add-MDWComplianceSkippedFix -Skipped $skipped -Finding $finding -Reason "Generic short PHP function or method name requires manual review."
+            continue
+        }
+
+        if ($kind -eq "meta key" -and ([string] $finding.CurrentValue).StartsWith("_")) {
+            Add-MDWComplianceSkippedFix -Skipped $skipped -Finding $finding -Reason "Private meta keys require manual migration review."
+            continue
+        }
+
+        $replacement = Get-MDWComplianceFixReplacementValue -CurrentValue $finding.CurrentValue -RecommendedPrefix $ExpectedPrefix -Kind $kind
+
+        if ([string]::IsNullOrWhiteSpace($replacement) -or $replacement -eq $finding.CurrentValue) {
+            Add-MDWComplianceSkippedFix -Skipped $skipped -Finding $finding -Reason "Replacement could not be resolved safely."
+            continue
+        }
+
         $key = ("{0}|{1}|{2}|{3}|{4}" -f $finding.File, $finding.Line, $finding.CurrentValue, $replacement, $kind)
 
         if ($seen.ContainsKey($key)) {
@@ -195,11 +232,12 @@ function Convert-MDWComplianceRegexReplacement {
     )
 
     $regex = New-Object System.Text.RegularExpressions.Regex($Pattern)
-    $replaced = $false
+    $script:MDW_PREFIX_FIX_REPLACED = $false
+
     $result = $regex.Replace($LineText, [System.Text.RegularExpressions.MatchEvaluator] {
         param($match)
 
-        if ($replaced) {
+        if ($script:MDW_PREFIX_FIX_REPLACED) {
             return $match.Value
         }
 
@@ -399,5 +437,6 @@ function Invoke-MDWCompliancePrefixFixer {
         WhatIf           = [bool] $WhatIf
     }
 }
+
 
 
