@@ -251,6 +251,12 @@ function Invoke-MDWCompliance {
             return
         }
 
+        if (-not $whatIf) {
+            Write-MDWSection -Title "Result"
+            Write-Host "  [FAIL] Prefix fixer apply mode is temporarily disabled pending semantic safety patch." -ForegroundColor Red
+            return
+        }
+
         $fixResult = Invoke-MDWComplianceFixService `
             -PluginSlug $pluginSlug `
             -PluginPath $pluginPath `
@@ -264,3 +270,5 @@ function Invoke-MDWCompliance {
     $result = Invoke-MDWComplianceService -PluginSlug $pluginSlug -PluginPath $pluginPath -ExpectedPrefix $expectedPrefix
     Write-MDWComplianceReport -Result $result
 }
+
+

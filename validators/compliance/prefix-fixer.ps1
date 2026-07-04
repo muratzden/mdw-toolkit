@@ -123,7 +123,7 @@ function Get-MDWCompliancePrefixFixPlan {
             continue
         }
 
-        $key = ("{0}|{1}|{2}" -f $finding.File, $finding.CurrentValue, $replacement)
+        $key = ("{0}|{1}|{2}|{3}" -f $finding.File, $finding.Line, $finding.CurrentValue, $replacement)
 
         if ($seen.ContainsKey($key)) {
             continue
@@ -142,6 +142,18 @@ function Get-MDWCompliancePrefixFixPlan {
     return @($plan.ToArray())
 }
 
+function Set-MDWComplianceTokenOnLine {
+    [CmdletBinding()]
+    param(
+        [string] $LineText,
+        [string] $CurrentValue,
+        [string] $RecommendedValue
+    )
+
+    $pattern = [regex]::Escape($CurrentValue)
+    return [regex]::Replace($LineText, $pattern, [System.Text.RegularExpressions.MatchEvaluator] { param($match) [string] $RecommendedValue }, 1)
+}
+
 function Invoke-MDWCompliancePrefixFixer {
     [CmdletBinding()]
     param(
@@ -151,34 +163,38 @@ function Invoke-MDWCompliancePrefixFixer {
         [switch] $WhatIf
     )
 
+    if (-not $WhatIf) {
+        throw "Prefix fixer apply mode is temporarily disabled pending semantic safety patch."
+    }
+
     $plan = @(Get-MDWCompliancePrefixFixPlan -PluginSlug $PluginSlug -PluginPath $PluginPath -ExpectedPrefix $ExpectedPrefix)
     $changes = New-Object System.Collections.Generic.List[object]
     $files = @($plan | ForEach-Object { $_["File"] } | Sort-Object -Unique)
-    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 
     foreach ($file in $files) {
-        $content = [System.IO.File]::ReadAllText($file)
-        $updatedContent = $content
+        $lines = @([System.IO.File]::ReadAllLines($file))
         $fileReplacementCount = 0
-        $filePlan = @($plan | Where-Object { $_["File"] -eq $file } | Sort-Object { ([string] $_["CurrentValue"]).Length } -Descending)
+        $filePlan = @($plan | Where-Object { $_["File"] -eq $file } | Sort-Object { [int] $_["Line"] })
 
         foreach ($item in $filePlan) {
-            $pattern = [regex]::Escape([string] $item["CurrentValue"])
-            $matches = [regex]::Matches($updatedContent, $pattern)
+            $lineNumber = [int] $item["Line"]
 
-            if ($matches.Count -le 0) {
+            if ($lineNumber -le 0 -or $lineNumber -gt $lines.Count) {
                 continue
             }
 
-            $updatedContent = [regex]::Replace($updatedContent, $pattern, [System.Text.RegularExpressions.MatchEvaluator] { param($match) [string] $item["RecommendedValue"] })
-            $fileReplacementCount += $matches.Count
+            $before = $lines[$lineNumber - 1]
+            $after = Set-MDWComplianceTokenOnLine `
+                -LineText $before `
+                -CurrentValue ([string] $item["CurrentValue"]) `
+                -RecommendedValue ([string] $item["RecommendedValue"])
+
+            if ($after -ne $before) {
+                $fileReplacementCount++
+            }
         }
 
         if ($fileReplacementCount -gt 0) {
-            if (-not $WhatIf) {
-                [System.IO.File]::WriteAllText($file, $updatedContent, $utf8NoBom)
-            }
-
             $changes.Add(@{
                 File             = $file
                 ReplacementCount = $fileReplacementCount
@@ -187,10 +203,15 @@ function Invoke-MDWCompliancePrefixFixer {
         }
     }
 
+    $replacementCount = 0
+
+    foreach ($change in @($changes.ToArray())) {
+        $replacementCount += [int] $change.ReplacementCount
+    }
+
     return @{
         ChangedFiles     = @($changes.ToArray())
-        ReplacementCount = (@($changes.ToArray()) | ForEach-Object { $_.ReplacementCount } | Measure-Object -Sum).Sum
+        ReplacementCount = $replacementCount
         WhatIf           = [bool] $WhatIf
     }
 }
-

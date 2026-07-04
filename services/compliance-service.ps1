@@ -243,3 +243,5 @@ function Invoke-MDWComplianceFixService {
         -Changes @($fixResult.ChangedFiles) `
         -Validation $validation
 }
+
+
