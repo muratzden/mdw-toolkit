@@ -14,6 +14,7 @@
     "rootPath": "C:\\Workspace",
     "pluginsPath": "C:\\Workspace\\Plugins",
     "buildPath": "C:\\Workspace\\Build",
+    "svnPath": "C:\\Workspace\\SVN",
     "backupPath": "D:\\Workspace Backup",
     "releasePath": "C:\\Workspace\\Releases",
     "releasesPath": "C:\\Workspace\\Releases"

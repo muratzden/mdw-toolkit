@@ -95,6 +95,81 @@ function Get-MDWBackupPath {
     return Get-MDWRequiredPathConfigValue -Config $config -Keys @("workspace.backupPath", "Backup") -Name "backup path"
 }
 
+function Test-MDWSvnPluginSlug {
+    [CmdletBinding()]
+    param(
+        [string] $PluginSlug
+    )
+
+    if ([string]::IsNullOrWhiteSpace($PluginSlug)) {
+        return $true
+    }
+
+    $trimmedSlug = $PluginSlug.Trim()
+
+    if ([string]::IsNullOrWhiteSpace($trimmedSlug)) {
+        return $true
+    }
+
+    if ($trimmedSlug -eq ".." -or $trimmedSlug.Contains("..")) {
+        return $false
+    }
+
+    if ($trimmedSlug.Contains("/") -or $trimmedSlug.Contains("\")) {
+        return $false
+    }
+
+    if ($trimmedSlug -match "^[A-Za-z]:") {
+        return $false
+    }
+
+    if ([System.IO.Path]::IsPathRooted($trimmedSlug)) {
+        return $false
+    }
+
+    return $true
+}
+
+function Get-MDWSvnPath {
+    [CmdletBinding()]
+    param(
+        [string] $PluginSlug
+    )
+
+    $config = Get-MDWPathConfig
+    $svnPath = Get-MDWRequiredPathConfigValue -Config $config -Keys @("workspace.svnPath", "SVN") -Name "SVN root path"
+
+    if (-not [System.IO.Path]::IsPathRooted($svnPath)) {
+        throw "MDW config path must be absolute: SVN root path"
+    }
+
+    $normalizedSvnPath = [System.IO.Path]::GetFullPath($svnPath).TrimEnd([char[]] @("\", "/"))
+
+    if ([string]::IsNullOrWhiteSpace($PluginSlug)) {
+        return $normalizedSvnPath
+    }
+
+    $trimmedSlug = $PluginSlug.Trim()
+
+    if (-not (Test-MDWSvnPluginSlug -PluginSlug $trimmedSlug)) {
+        throw "Invalid plugin slug for SVN path: $PluginSlug"
+    }
+
+    if ([string]::IsNullOrWhiteSpace($trimmedSlug)) {
+        return $normalizedSvnPath
+    }
+
+    $pluginSvnPath = Join-Path $normalizedSvnPath $trimmedSlug
+    $normalizedPluginSvnPath = [System.IO.Path]::GetFullPath($pluginSvnPath).TrimEnd([char[]] @("\", "/"))
+    $svnRootPrefix = $normalizedSvnPath + [System.IO.Path]::DirectorySeparatorChar
+
+    if (-not $normalizedPluginSvnPath.StartsWith($svnRootPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Invalid plugin slug for SVN path: $PluginSlug"
+    }
+
+    return $normalizedPluginSvnPath
+}
+
 function Get-MDWPluginPath {
     [CmdletBinding()]
     param(
