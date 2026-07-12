@@ -19,6 +19,17 @@
     "releasePath": "C:\\Workspace\\Releases",
     "releasesPath": "C:\\Workspace\\Releases"
   },
+  "plugin": {
+    "slug": "cck-review-flow-for-woocommerce",
+    "name": "CCK Review Flow for WooCommerce",
+    "entryFile": "cck-review-flow-for-woocommerce.php"
+  },
+  "wordpressOrg": {
+    "enabled": true,
+    "slug": "cck-review-flow-for-woocommerce",
+    "svnUrl": "https://plugins.svn.wordpress.org/cck-review-flow-for-woocommerce",
+    "assetsSource": "wordpress-org-assets"
+  },
   "local": {
     "provider": "laragon"
   },

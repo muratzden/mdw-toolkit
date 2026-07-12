@@ -22,6 +22,8 @@ $services = @(
     @{ Name = "Init"; EntryPoint = "Invoke-MDWInitService" }
     @{ Name = "Workspace"; EntryPoint = "Invoke-MDWWorkspaceService" }
     @{ Name = "SVN Path"; EntryPoint = "Get-MDWSvnPath" }
+    @{ Name = "SVN Service"; EntryPoint = "Get-MDWSvnStatus" }
+    @{ Name = "SVN Publish"; EntryPoint = "Invoke-MDWSvnPublish" }
 )
 
 foreach ($service in $services) {

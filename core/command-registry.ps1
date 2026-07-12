@@ -24,6 +24,7 @@ function Get-MDWCommandRegistry {
         build = @{ Script = "commands/build.ps1"; EntryPoint = "Invoke-MDWBuild"; Description = "Build current plugin." }
         zip = @{ Script = "commands/zip.ps1"; EntryPoint = "Invoke-MDWZip"; Description = "Create release ZIP package." }
         release = @{ Script = "commands/release.ps1"; EntryPoint = "Invoke-MDWRelease"; Description = "Create a production release." }
+        svn = @{ Script = "commands/svn.ps1"; EntryPoint = "Invoke-MDWSvnCommand"; Description = "Manage WordPress.org SVN publishing." }
         backup = @{ Script = "commands/backup.ps1"; EntryPoint = "Invoke-MDWBackup"; Description = "Create a project backup." }
         clean = @{ Script = "commands/clean.ps1"; EntryPoint = "Invoke-MDWClean"; Description = "Clean build and temporary files." }
         git = @{ Script = "commands/git.ps1"; EntryPoint = "Invoke-MDWGitCommand"; Description = "Inspect Git repository information." }

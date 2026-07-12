@@ -12,9 +12,17 @@ function Invoke-MDWRelease {
     )
 
     $pluginSlug = $null
+    $publishWpOrg = $false
 
     if ($Arguments -and $Arguments.Count -gt 0) {
-        $pluginSlug = $Arguments[0]
+        foreach ($argument in $Arguments) {
+            if ($argument -eq "--wporg") {
+                $publishWpOrg = $true
+            }
+            elseif ($argument -notlike "-*" -and [string]::IsNullOrWhiteSpace($pluginSlug)) {
+                $pluginSlug = $argument
+            }
+        }
     }
 
     if (-not $pluginSlug) {
@@ -89,6 +97,21 @@ function Invoke-MDWRelease {
 
         Write-MDWSection -Title "Output"
         Write-MDWInfoCard -Label "Release ZIP" -Value $zipPath
+
+        if ($publishWpOrg) {
+            Write-MDWBlank
+            Write-MDWStatus -Status "INFO" -Message "Run WordPress.org SVN publish"
+            $svnPublishResult = Invoke-MDWSvnPublish -PluginSlug $pluginSlug
+
+            if (-not $svnPublishResult.Passed) {
+                foreach ($errorItem in $svnPublishResult.Errors) {
+                    Write-MDWStatus -Status "FAIL" -Message $errorItem
+                }
+
+                Write-MDWResult -Status "FAIL" -Message "Release stopped because WordPress.org publish failed."
+                return
+            }
+        }
 
         Write-MDWResult -Status "OK" -Message "Release completed successfully."
     }

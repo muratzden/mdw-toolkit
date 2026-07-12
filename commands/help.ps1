@@ -20,6 +20,7 @@ function Get-MDWHelpPage {
         check = @{ Description = "Run quick internal plugin structure checks."; Usage = "mdw check <plugin-slug>"; Parameters = @("plugin-slug: Plugin folder name."); Examples = @("mdw check my-plugin") }
         lint = @{ Description = "Run php -l across plugin PHP files."; Usage = "mdw lint <plugin-slug> or mdw lint -PluginPath <path>"; Parameters = @("plugin-slug: Plugin folder name.", "-PluginPath: Direct plugin path."); Examples = @("mdw lint my-plugin", "mdw lint -PluginPath C:\Workspace\Plugins\my-plugin") }
         release = @{ Description = "Run backup, build, validate and ZIP release preparation."; Usage = "mdw release <plugin-slug>"; Parameters = @("plugin-slug: Plugin folder name."); Examples = @("mdw release my-plugin") }
+        svn = @{ Description = "Manage WordPress.org SVN status, checkout, sync, tag and publish workflows."; Usage = "mdw svn [status|checkout|sync|tag|publish] [--plugin <slug>] [--dry-run]"; Parameters = @("status: Inspect SVN readiness without changing files.", "checkout: Checkout or update the configured WordPress.org working copy.", "sync: Sync build output to SVN trunk.", "tag: Prepare an SVN tag from trunk.", "publish: Run the WordPress.org publish pipeline.", "--dry-run: Preview publish/sync/tag without committing."); Examples = @("mdw svn status", "mdw svn checkout", "mdw svn sync --dry-run", "mdw svn publish --dry-run") }
         zip = @{ Description = "Create a release ZIP from the build output."; Usage = "mdw zip <plugin-slug>"; Parameters = @("plugin-slug: Plugin folder name."); Examples = @("mdw build my-plugin", "mdw zip my-plugin") }
     }
 
@@ -89,6 +90,7 @@ function Invoke-MDWHelp {
         @{ Name = "mdw validate <plugin>"; Description = "Release readiness" }
         @{ Name = "mdw build <plugin>"; Description = "Build package" }
         @{ Name = "mdw release <plugin>"; Description = "Release plugin" }
+        @{ Name = "mdw svn status"; Description = "WordPress.org SVN" }
     )
 
     $workflowCommands = @(
@@ -96,6 +98,7 @@ function Invoke-MDWHelp {
         @{ Name = "mdw lint <plugin>"; Description = "PHP syntax lint" }
         @{ Name = "mdw plugin-check <plugin>"; Description = "Plugin checks" }
         @{ Name = "mdw zip <plugin>"; Description = "Create ZIP" }
+        @{ Name = "mdw svn publish --dry-run"; Description = "WP.org dry run" }
         @{ Name = "mdw test"; Description = "Run tests" }
     )
 

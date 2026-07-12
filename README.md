@@ -164,6 +164,57 @@ release complete
 
 The release pipeline stops when validation fails or the ZIP package cannot be created.
 
+## WordPress.org SVN Configuration
+
+WordPress.org publishing is configured in `mdw.json` with `workspace.svnPath` and `wordpressOrg` settings. The SVN working copy root is resolved centrally, for example `C:\Workspace\SVN\<plugin-slug>`.
+
+```powershell
+.\mdw.ps1 svn status
+.\mdw.ps1 svn checkout
+.\mdw.ps1 svn sync --dry-run
+.\mdw.ps1 svn publish --dry-run
+```
+
+## First WordPress.org Release
+
+Use `svn checkout` to prepare the working copy, then run a dry run before publishing.
+
+```powershell
+.\mdw.ps1 svn checkout
+.\mdw.ps1 svn publish --dry-run
+```
+
+The dry run builds, validates, creates the ZIP package and previews trunk, assets and tag readiness without committing to WordPress.org.
+
+## Updating an Existing Release
+
+For an existing SVN working copy, use:
+
+```powershell
+.\mdw.ps1 svn status
+.\mdw.ps1 svn sync
+.\mdw.ps1 svn tag
+.\mdw.ps1 svn publish
+```
+
+`svn publish` stops on validation errors and does not overwrite an existing tag.
+
+## Dry Run
+
+Dry-run mode never runs `svn commit`. It is intended for release review and CI-style validation:
+
+```powershell
+.\mdw.ps1 svn publish --dry-run
+```
+
+## Plugin Rename Workflow
+
+Rename support should be handled as a separate, guarded workflow. Metadata-only rename is the safe default: plugin name, slug, main file, text domain, readme and MDW metadata can be updated while internal option keys, meta keys and customer data remain unchanged.
+
+## SVN Troubleshooting
+
+Run `.\mdw.ps1 svn status` first. It reports SVN availability, configured URL, working copy validity, trunk/assets presence, plugin version, expected tag and local SVN changes.
+
 ## Screenshots
 
 Screenshots are available in `assets/screenshots/`.

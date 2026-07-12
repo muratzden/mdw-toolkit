@@ -15,6 +15,7 @@ $commands = @(
     @{ Name = "validate"; EntryPoint = "Invoke-MDWValidate" }
     @{ Name = "zip"; EntryPoint = "Invoke-MDWZip" }
     @{ Name = "release"; EntryPoint = "Invoke-MDWRelease" }
+    @{ Name = "svn"; EntryPoint = "Invoke-MDWSvnCommand" }
     @{ Name = "test"; EntryPoint = "Invoke-MDWTest" }
 )
 

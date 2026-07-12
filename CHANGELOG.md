@@ -6,6 +6,15 @@ The format of this changelog is based on Keep a Changelog and this project follo
 
 ---
 
+## [Unreleased]
+
+### Added
+
+* WordPress.org SVN configuration foundation and `mdw svn` command surface.
+* SVN status and publish dry-run reporting for configured WordPress.org plugins.
+
+---
+
 ## [1.1.0] - 2026-07-03
 
 ### Added
