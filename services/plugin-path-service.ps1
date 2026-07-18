@@ -229,6 +229,58 @@ function Get-MDWPluginsRootPath {
     return Get-MDWPluginsPath
 }
 
+function Test-MDWPluginPathHasMainFile {
+    [CmdletBinding()]
+    param(
+        [string] $PluginPath
+    )
+
+    if ([string]::IsNullOrWhiteSpace($PluginPath) -or -not (Test-Path -LiteralPath $PluginPath -PathType Container)) {
+        return $false
+    }
+
+    $phpFiles = @(Get-ChildItem -LiteralPath $PluginPath -Filter "*.php" -File -ErrorAction SilentlyContinue)
+
+    foreach ($phpFile in $phpFiles) {
+        $content = Get-Content -LiteralPath $phpFile.FullName -Raw -ErrorAction SilentlyContinue
+
+        if ($content -match "(?mi)^\s*(?:\*\s*)?Plugin Name\s*:") {
+            return $true
+        }
+    }
+
+    return $false
+}
+
+function Resolve-MDWNestPluginPath {
+    [CmdletBinding()]
+    param(
+        [string] $PluginSlug,
+        [string] $PluginPath
+    )
+
+    if (Test-MDWPluginPathHasMainFile -PluginPath $PluginPath) {
+        return $PluginPath
+    }
+
+    $preferredNestedPath = Join-Path $PluginPath $PluginSlug
+
+    if (Test-MDWPluginPathHasMainFile -PluginPath $preferredNestedPath) {
+        return $preferredNestedPath
+    }
+
+    $nestedCandidates = @(
+        Get-ChildItem -LiteralPath $PluginPath -Directory -ErrorAction SilentlyContinue |
+            Where-Object { Test-MDWPluginPathHasMainFile -PluginPath $_.FullName }
+    )
+
+    if ($nestedCandidates.Count -eq 1) {
+        return $nestedCandidates[0].FullName
+    }
+
+    return $PluginPath
+}
+
 function Resolve-MDWPluginPath {
     [CmdletBinding()]
     param(
@@ -240,6 +292,10 @@ function Resolve-MDWPluginPath {
 
     if ($RequireExisting -and -not (Test-Path -LiteralPath $pluginPath -PathType Container)) {
         throw "Plugin directory not found: $pluginPath"
+    }
+
+    if (Test-Path -LiteralPath $pluginPath -PathType Container) {
+        return Resolve-MDWNestPluginPath -PluginSlug $PluginSlug -PluginPath $pluginPath
     }
 
     return $pluginPath
