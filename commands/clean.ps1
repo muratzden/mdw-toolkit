@@ -1,4 +1,4 @@
-﻿<#
+<#
 MDW Clean Command
 PowerShell 5.1 / 7 compatible
 #>
@@ -27,7 +27,7 @@ function Invoke-MDWClean {
     }
 
     $toolkitRoot = Get-MDWToolkitPath
-    $pluginPath = Get-MDWPluginPath -PluginSlug $pluginSlug
+    $pluginPath = Resolve-MDWPluginPath -PluginSlug $pluginSlug -RequireExisting
     $buildPath = Get-MDWBuildPluginPath -PluginSlug $pluginSlug
     $releasePath = Get-MDWReleasePluginPath -PluginSlug $pluginSlug
     $legacyBuildPath = Join-Path (Join-Path $toolkitRoot "build") $pluginSlug

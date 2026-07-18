@@ -255,7 +255,7 @@ function Deploy-MDWPluginToLocalWP {
     $sourcePath = $null
 
     if ($errors.Count -eq 0) {
-        $sourcePath = Get-MDWPluginPath -PluginSlug $PluginSlug
+        $sourcePath = Resolve-MDWPluginPath -PluginSlug $PluginSlug -RequireExisting
 
         if (-not (Test-Path -LiteralPath $sourcePath -PathType Container)) {
             $errors.Add("Source plugin directory not found: $sourcePath")

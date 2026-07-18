@@ -95,7 +95,7 @@ function Invoke-MDWWorkspaceService {
     $backupPath = $null
 
     if (-not [string]::IsNullOrWhiteSpace($PluginSlug)) {
-        $pluginPath = Get-MDWPluginPath -PluginSlug $PluginSlug
+        $pluginPath = Resolve-MDWPluginPath -PluginSlug $PluginSlug
         $releasePath = Get-MDWReleasePluginPath -PluginSlug $PluginSlug
         $backupPath = Get-MDWBackupPluginPath -PluginSlug $PluginSlug
     }
