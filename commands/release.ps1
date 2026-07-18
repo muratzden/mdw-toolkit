@@ -1,4 +1,4 @@
-﻿<#
+<#
 MDW Release Command
 PowerShell 5.1 / 7 compatible
 #>
@@ -40,7 +40,7 @@ function Invoke-MDWRelease {
         return
     }
 
-    $pluginPath = Get-MDWPluginPath -PluginSlug $pluginSlug
+    $pluginPath = Resolve-MDWPluginPath -PluginSlug $pluginSlug -RequireExisting
     $releasePath = Get-MDWReleasePluginPath -PluginSlug $pluginSlug
     $zipPath = Join-Path $releasePath "$pluginSlug.zip"
 

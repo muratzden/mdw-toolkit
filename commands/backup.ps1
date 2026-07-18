@@ -1,4 +1,4 @@
-﻿<#
+<#
 MDW Backup Command
 PowerShell 5.1 / 7 compatible
 #>
@@ -26,7 +26,7 @@ function Invoke-MDWBackup {
         throw "Plugin slug could not be resolved."
     }
 
-    $pluginPath = Get-MDWPluginPath -PluginSlug $pluginSlug
+    $pluginPath = Resolve-MDWPluginPath -PluginSlug $pluginSlug -RequireExisting
 
     if (-not (Test-Path -LiteralPath $pluginPath -PathType Container)) {
         throw "Plugin directory not found: $pluginPath"

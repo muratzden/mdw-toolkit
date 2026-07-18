@@ -137,7 +137,7 @@ function Get-MDWWpOrgConfig {
     $entryFile = Get-MDWConfigValue -Config $config -Key "plugin.entryFile" -DefaultValue ("{0}.php" -f $slug)
     $svnUrl = Get-MDWConfigValue -Config $config -Key "wordpressOrg.svnUrl" -DefaultValue ("https://plugins.svn.wordpress.org/{0}" -f $slug)
     $assetsSource = Get-MDWConfigValue -Config $config -Key "wordpressOrg.assetsSource" -DefaultValue "wordpress-org-assets"
-    $sourcePath = Get-MDWPluginPath -PluginSlug $slug
+    $sourcePath = Resolve-MDWPluginPath -PluginSlug $slug -RequireExisting
     $workingCopyPath = Get-MDWSvnPath -PluginSlug $slug
 
     return @{
